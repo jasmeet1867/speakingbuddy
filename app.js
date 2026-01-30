@@ -1,5 +1,8 @@
 const languageGroup = document.getElementById("languageGroup");
-const STORAGE_KEY = "selectedLanguage";
+const difficultyGroup = document.getElementById("difficultyGroup");
+
+const STORAGE_LANG = "selectedLanguage";
+const STORAGE_DIFFICULTY = "selectedDifficulty";
 
 const translations = {
   en: {
@@ -8,7 +11,8 @@ const translations = {
     login: "Login",
     signup: "Sign Up",
     heroTitle: 'Practice <span>Pronunciation</span>',
-    heroSubtitle: "Choose your difficulty, translation language, and start practicing real-world words.",
+    heroSubtitle:
+      "Choose your difficulty, translation language, and start practicing real-world words.",
     settingsTitle: "Practice Settings",
     difficultyLabel: "Difficulty Mode",
     withText: "With Text",
@@ -32,7 +36,8 @@ const translations = {
     login: "Connexion",
     signup: "S’inscrire",
     heroTitle: 'Pratiquer la <span>prononciation</span>',
-    heroSubtitle: "Choisissez la difficulté, la langue de traduction et commencez à pratiquer des mots du quotidien.",
+    heroSubtitle:
+      "Choisissez la difficulté, la langue de traduction et commencez à pratiquer des mots du quotidien.",
     settingsTitle: "Paramètres d’entraînement",
     difficultyLabel: "Mode de difficulté",
     withText: "Avec texte",
@@ -72,45 +77,127 @@ const translations = {
     catFood: "Essen",
     catNumbers: "Zahlen",
     catColors: "Farben",
-  }
+  },
 };
 
 function applyLanguage(lang) {
   const dict = translations[lang] || translations.en;
 
-  document.querySelectorAll("[data-i18n]").forEach(el => {
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.dataset.i18n;
     if (!dict[key]) return;
 
-    // If text includes HTML tags (like <span>), use innerHTML
     if (dict[key].includes("<")) el.innerHTML = dict[key];
     else el.textContent = dict[key];
   });
 
-  // update html lang attribute
   document.documentElement.lang = lang;
-
-  localStorage.setItem(STORAGE_KEY, lang);
+  localStorage.setItem(STORAGE_LANG, lang);
 }
 
 function setActiveLanguageButton(lang) {
-  languageGroup.querySelectorAll(".pill").forEach(btn => {
+  if (!languageGroup) return;
+  languageGroup.querySelectorAll(".pill").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.lang === lang);
   });
 }
 
-if (languageGroup) {
-  // Load saved
-  const saved = localStorage.getItem(STORAGE_KEY) || "en";
-  setActiveLanguageButton(saved);
-  applyLanguage(saved);
+function setActiveDifficultyButton(mode) {
+  if (!difficultyGroup) return;
+  difficultyGroup.querySelectorAll("button").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.mode === mode);
+  });
+  localStorage.setItem(STORAGE_DIFFICULTY, mode);
+}
+
+function getState() {
+  return {
+    lang: localStorage.getItem(STORAGE_LANG) || "en",
+    difficulty: localStorage.getItem(STORAGE_DIFFICULTY) || "text",
+  };
+}
+
+function wireCategories() {
+  const cards = document.querySelectorAll(".categories .card");
+  if (!cards.length) return;
+
+  const categoryIds = [
+    "greetings",
+    "animals",
+    "home",
+    "travel",
+    "family",
+    "food",
+    "numbers",
+    "colors",
+  ];
+
+  cards.forEach((card, i) => {
+    const category = categoryIds[i] || `cat${i + 1}`;
+    card.dataset.category = category;
+
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+
+    const go = () => {
+      const { lang, difficulty } = getState();
+
+      // ✅ Greetings → greeting/greetings.html with params
+      if (category === "greetings") {
+        window.location.href = `greeting/greetings.html?lang=${encodeURIComponent(
+          lang
+        )}&mode=${encodeURIComponent(difficulty)}`;
+        return;
+      }
+
+      // Other categories → practice.html (later)
+      window.location.href = `practice.html?category=${encodeURIComponent(
+        category
+      )}&lang=${encodeURIComponent(lang)}&mode=${encodeURIComponent(difficulty)}`;
+    };
+
+    card.addEventListener("click", go);
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        go();
+      }
+    });
+  });
+}
+
+function wireDifficulty() {
+  if (!difficultyGroup) return;
+
+  difficultyGroup.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-mode]");
+    if (!btn) return;
+
+    setActiveDifficultyButton(btn.dataset.mode);
+  });
+}
+
+function wireLanguages() {
+  if (!languageGroup) return;
 
   languageGroup.addEventListener("click", (e) => {
     const btn = e.target.closest(".pill");
     if (!btn) return;
-    const lang = btn.dataset.lang;
 
+    const lang = btn.dataset.lang;
     setActiveLanguageButton(lang);
     applyLanguage(lang);
   });
 }
+
+(function init() {
+  const { lang, difficulty } = getState();
+
+  setActiveLanguageButton(lang);
+  applyLanguage(lang);
+  setActiveDifficultyButton(difficulty);
+
+  wireLanguages();
+  wireDifficulty();
+  wireCategories();
+})();
