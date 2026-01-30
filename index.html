@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Practice Landing</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1 data-i18n="brandTitle">Pronounce</h1>
+          <p data-i18n="brandSubtitle">Language Practice</p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button class="btn" type="button" data-i18n="login">Login</button>
+        <button class="btn primary" type="button" data-i18n="signup">Sign Up</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="hero">
+      <h2 class="appname" data-i18n="heroTitle">Practice <span>Pronunciation</span></h2>
+      <p class="subtitle" data-i18n="heroSubtitle">
+        Choose your difficulty, translation language, and start practicing real-world words.
+      </p>
+    </section>
+
+    <section class="settings-wrap">
+      <div class="settings">
+        <h2 data-i18n="settingsTitle">Practice Settings</h2>
+
+        <div class="label" data-i18n="difficultyLabel">Difficulty Mode</div>
+        <div class="segmented" id="difficultyGroup">
+          <button class="active" type="button" data-mode="text" data-i18n="withText">With Text</button>
+          <button type="button" data-mode="audio" data-i18n="audioOnly">Audio Only</button>
+        </div>
+
+        <div class="label" data-i18n="languageLabel">Translation Language</div>
+        <div class="languages" id="languageGroup">
+          <button class="pill active" data-lang="en" type="button">🇬🇧 English</button>
+          <button class="pill" data-lang="fr" type="button">🇫🇷 Français</button>
+          <button class="pill" data-lang="de" type="button">🇩🇪 Deutsch</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="categories-section">
+      <h3 data-i18n="categoryTitle">Choose a Category</h3>
+
+      <div class="categories">
+        <div class="card"><span class="emoji">👋</span> <span data-i18n="catGreetings">Greetings</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
+        <div class="card"><span class="emoji">🐾</span> <span data-i18n="catAnimals">Animals</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
+        <div class="card"><span class="emoji">🏠</span> <span data-i18n="catHome">Home</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
+        <div class="card"><span class="emoji">🚗</span> <span data-i18n="catTravel">Travel</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
+        <div class="card"><span class="emoji">👨‍👩‍👧</span> <span data-i18n="catFamily">Family</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
+        <div class="card"><span class="emoji">🍔</span> <span data-i18n="catFood">Food</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
+        <div class="card"><span class="emoji">🔢</span> <span data-i18n="catNumbers">Numbers</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
+        <div class="card"><span class="emoji">🎨</span> <span data-i18n="catColors">Colors</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
