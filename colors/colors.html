@@ -1,22 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Greetings • Practice</title>
-  <link rel="stylesheet" href="greetings.css" />
+  <title>Colors • Practice</title>
+  <link rel="stylesheet" href="colors.css" />
 </head>
 <body>
 
   <header class="topbar">
     <div class="topbar-inner">
-      <button class="icon-btn" id="backBtn" title="Back">
-        ← Back
-      </button>
+      <button class="icon-btn" id="backBtn" title="Back">← Back</button>
 
       <div class="title">
-        <span class="emoji">👋</span>
-        <span class="txt" id="pageTitle">Greetings</span>
+        <span class="emoji">🎨</span>
+        <span class="txt" id="pageTitle">Colors</span>
       </div>
 
       <div class="right">
@@ -37,12 +35,11 @@
       <div class="card-top">
         <div class="hint" id="hintText">Say this</div>
 
-        <div class="big" id="promptWord">Hello</div>
+        <div class="big" id="promptWord">rot</div>
 
-        <!-- ✅ NEW: English meaning (shows only for FR/DE from JS) -->
         <div class="meaning" id="meaningText"></div>
 
-        <div class="sub" id="phonetic">HEL-oh</div>
+        <div class="sub" id="phonetic">roht</div>
       </div>
 
       <div class="listen-row">
@@ -77,30 +74,6 @@
         </div>
       </div>
 
-      <div class="quiz" id="quiz">
-        <button class="btn" id="startQuizBtn" type="button">Start Quiz</button>
-
-        <div class="quiz-area" id="quizArea" hidden>
-          <div class="quiz-meta">
-            <div class="quiz-count" id="quizCount">Question 1/10</div>
-            <div class="quiz-score" id="quizScore">Score: 0/10</div>
-          </div>
-
-          <div class="quiz-top">
-            <div class="hint">Choose the correct translation</div>
-            <div class="quiz-word" id="quizWord">Hallo</div>
-          </div>
-
-          <div class="quiz-options" id="quizOptions"></div>
-
-          <div class="quiz-feedback" id="quizFeedback"></div>
-
-          <div class="quiz-actions">
-            <button class="btn ghost" id="nextQuizBtn" type="button" disabled>Next Question →</button>
-          </div>
-        </div>
-      </div>
-
       <div class="nav">
         <button class="btn ghost" id="prevBtn">← Previous</button>
         <button class="btn primary" id="nextBtn">Next →</button>
@@ -109,6 +82,6 @@
 
   </main>
 
-  <script src="greetings.js"></script>
+  <script src="colors.js"></script>
 </body>
 </html>
