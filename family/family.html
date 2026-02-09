@@ -46,9 +46,9 @@
         <button class="btn" id="listenBtn">🔊 Listen</button>
         <select class="voice" id="voiceSelect" title="Voice"></select>
         <select class="speed" id="speedSelect" title="Speed">
-          <option value="0.85">0.85×</option>
-          <option value="1" selected>1×</option>
-          <option value="1.1">1.1×</option>
+          <option value="0.85">0.85x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.1">1.1x</option>
         </select>
       </div>
 
@@ -70,7 +70,31 @@
       <div class="feedback" id="feedback">
         <div class="fb-title">Feedback</div>
         <div class="fb-body" id="fbBody">
-          Record your voice and we’ll show a basic match check.
+          Record your voice and we'll show a basic match check.
+        </div>
+      </div>
+
+      <div class="quiz" id="quiz">
+        <button class="btn" id="startQuizBtn" type="button">Start Quiz</button>
+
+        <div class="quiz-area" id="quizArea" hidden>
+          <div class="quiz-meta">
+            <div class="quiz-count" id="quizCount">Question 1/10</div>
+            <div class="quiz-score" id="quizScore">Score: 0/10</div>
+          </div>
+
+          <div class="quiz-top">
+            <div class="hint">Choose the correct translation</div>
+            <div class="quiz-word" id="quizWord">Mutter</div>
+          </div>
+
+          <div class="quiz-options" id="quizOptions"></div>
+
+          <div class="quiz-feedback" id="quizFeedback"></div>
+
+          <div class="quiz-actions">
+            <button class="btn ghost" id="nextQuizBtn" type="button" disabled>Next Question →</button>
+          </div>
         </div>
       </div>
 
@@ -82,6 +106,7 @@
 
   </main>
 
+  <script src="../quiz-shared.js"></script>
   <script src="family.js"></script>
 </body>
 </html>

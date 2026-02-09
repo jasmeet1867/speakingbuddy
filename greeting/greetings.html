@@ -49,9 +49,9 @@
         <button class="btn" id="listenBtn">🔊 Listen</button>
         <select class="voice" id="voiceSelect" title="Voice"></select>
         <select class="speed" id="speedSelect" title="Speed">
-          <option value="0.85">0.85×</option>
-          <option value="1" selected>1×</option>
-          <option value="1.1">1.1×</option>
+          <option value="0.85">0.85x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.1">1.1x</option>
         </select>
       </div>
 
@@ -73,7 +73,7 @@
       <div class="feedback" id="feedback">
         <div class="fb-title">Feedback</div>
         <div class="fb-body" id="fbBody">
-          Record your voice and we’ll show a basic match check.
+          Record your voice and we'll show a basic match check.
         </div>
       </div>
 
@@ -81,7 +81,8 @@
         <button class="btn" id="startQuizBtn" type="button">Start Quiz</button>
 
         <div class="quiz-area" id="quizArea" hidden>
-          <div class="quiz-meta">
+  <script src="../quiz-shared.js"></script>
+  <script src="greetings.js"></script>
             <div class="quiz-count" id="quizCount">Question 1/10</div>
             <div class="quiz-score" id="quizScore">Score: 0/10</div>
           </div>

@@ -2,174 +2,32 @@
 
 const STORAGE_LANG = "selectedLanguage";
 const STORAGE_DIFFICULTY = "selectedDifficulty";
+// ----------------------
+// Init
+// ----------------------
+document.documentElement.lang = PRACTICE_LANG;
+setHint();
+updateUI();
 
-function getQueryParam(name) {
-  const params = new URLSearchParams(window.location.search);
-  return params.get(name);
-}
-
-function getLang() {
-  const lang = getQueryParam("lang") || localStorage.getItem(STORAGE_LANG) || "en";
-  if (lang === "en" || lang === "fr" || lang === "de") return lang;
-  return "en";
-}
-
-function getMode() {
-  return getQueryParam("mode") || localStorage.getItem(STORAGE_DIFFICULTY) || "text";
-}
-
-const TARGET_LANG = getLang();
-const CURRENT_MODE = getMode();
-
-const PRACTICE_LANG = "de";
-const PRACTICE_LOCALE = "de-DE";
-
-const WORDS = [
-  { text: "eins", phon: "ines", translations: { en: "one", fr: "un", de: "eins" }, accept: ["eins"] },
-  { text: "zwei", phon: "tsvy", translations: { en: "two", fr: "deux", de: "zwei" }, accept: ["zwei"] },
-  { text: "drei", phon: "dry", translations: { en: "three", fr: "trois", de: "drei" }, accept: ["drei"] },
-  { text: "vier", phon: "feer", translations: { en: "four", fr: "quatre", de: "vier" }, accept: ["vier"] },
-  { text: "fünf", phon: "fuenf", translations: { en: "five", fr: "cinq", de: "fünf" }, accept: ["fünf", "funf"] },
-  { text: "sechs", phon: "zeks", translations: { en: "six", fr: "six", de: "sechs" }, accept: ["sechs"] },
-  { text: "sieben", phon: "ZEE-ben", translations: { en: "seven", fr: "sept", de: "sieben" }, accept: ["sieben"] },
-  { text: "acht", phon: "akht", translations: { en: "eight", fr: "huit", de: "acht" }, accept: ["acht"] },
-  { text: "neun", phon: "noyn", translations: { en: "nine", fr: "neuf", de: "neun" }, accept: ["neun"] },
-  { text: "zehn", phon: "tsayn", translations: { en: "ten", fr: "dix", de: "zehn" }, accept: ["zehn"] },
-];
-
-const backBtn = document.getElementById("backBtn");
-const counter = document.getElementById("counter");
-const progressBar = document.getElementById("progressBar");
-
-const promptWord = document.getElementById("promptWord");
-const phonetic = document.getElementById("phonetic");
-const meaningText = document.getElementById("meaningText");
-
-const listenBtn = document.getElementById("listenBtn");
-const voiceSelect = document.getElementById("voiceSelect");
-const speedSelect = document.getElementById("speedSelect");
-
-const recordBtn = document.getElementById("recordBtn");
-const playBtn = document.getElementById("playBtn");
-const retryBtn = document.getElementById("retryBtn");
-
-const micHint = document.getElementById("micHint");
-const meterFill = document.getElementById("meterFill");
-
-const fbBody = document.getElementById("fbBody");
-
-const prevBtn = document.getElementById("prevBtn");
-const nextBtn = document.getElementById("nextBtn");
-
-const hintText = document.getElementById("hintText");
-
-let VOICE_LIST = [];
-
-let i = 0;
-
-let mediaRecorder = null;
-let recordedChunks = [];
-let recordedBlob = null;
-let recordedUrl = null;
-
-let audioStream = null;
-let audioContext = null;
-let analyser = null;
-let meterRAF = null;
-
-let recognition = null;
-
-function setFeedback(html) {
-  fbBody.innerHTML = html;
-}
-
-function setHint() {
-  if (!hintText) return;
-  hintText.textContent = "Say this";
-}
-
-function updateUI() {
-  const item = WORDS[i];
-  promptWord.textContent = item.text;
-  phonetic.textContent = item.phon;
-
-  if (meaningText) {
-    const labels = { en: "Translation (English)", fr: "Translation (French)", de: "Translation (Deutsch)" };
-    const label = labels[TARGET_LANG] || labels.en;
-    const translation = (item.translations && item.translations[TARGET_LANG]) || "";
-    meaningText.innerHTML = `${label}: <b>${translation}</b>`;
-  }
-
-  if (CURRENT_MODE === "audio") {
-    promptWord.style.visibility = "hidden";
-    if (meaningText) meaningText.style.visibility = "hidden";
-  } else {
-    promptWord.style.visibility = "visible";
-    if (meaningText) meaningText.style.visibility = "visible";
-  }
-
-  counter.textContent = `${i + 1}/${WORDS.length}`;
-  progressBar.style.width = `${((i + 1) / WORDS.length) * 100}%`;
-
-  cleanupRecording();
-  playBtn.disabled = true;
-  retryBtn.disabled = true;
-
-  setFeedback("Record your voice and we’ll show a basic match check.");
-}
-
-function cleanupRecording() {
-  if (recordedUrl) URL.revokeObjectURL(recordedUrl);
-  recordedUrl = null;
-  recordedBlob = null;
-  recordedChunks = [];
-  meterFill.style.width = "0%";
-}
-
-if (backBtn) {
-  backBtn.addEventListener("click", () => {
-    window.location.href = "../index.html";
+if (window.createTranslationQuiz) {
+  window.createTranslationQuiz({
+    words: WORDS,
+    targetLang: TARGET_LANG,
+    ids: {
+      startBtn: "startQuizBtn",
+      area: "quizArea",
+      count: "quizCount",
+      score: "quizScore",
+      word: "quizWord",
+      options: "quizOptions",
+      feedback: "quizFeedback",
+      nextBtn: "nextQuizBtn",
+    },
+    showIntro: true,
   });
 }
 
-prevBtn.addEventListener("click", () => {
-  if (i > 0) i--;
-  updateUI();
-});
-
-nextBtn.addEventListener("click", () => {
-  if (i < WORDS.length - 1) i++;
-  updateUI();
-});
-
-function loadVoices() {
-  const voices = window.speechSynthesis?.getVoices?.() || [];
-  const target = PRACTICE_LOCALE.toLowerCase();
-
-  const matching = voices.filter(v => (v.lang || "").toLowerCase().startsWith(target.slice(0, 2)));
-  VOICE_LIST = matching.length ? matching : voices;
-
-  voiceSelect.innerHTML = "";
-  VOICE_LIST.forEach((v, idx) => {
-    const opt = document.createElement("option");
-    opt.value = String(idx);
-    opt.textContent = `${v.name} (${v.lang})`;
-    voiceSelect.appendChild(opt);
-  });
-}
-
-if ("speechSynthesis" in window) {
-  loadVoices();
-  window.speechSynthesis.onvoiceschanged = loadVoices;
-} else {
-  listenBtn.disabled = true;
-  setFeedback("Your browser does not support text-to-speech.");
-}
-
-listenBtn.addEventListener("click", () => {
-  if (!("speechSynthesis" in window)) return;
-
-  window.speechSynthesis.cancel();
+window.addEventListener("beforeunload", () => {
 
   const idx = Number(voiceSelect.value || 0);
   const voice = VOICE_LIST[idx] || VOICE_LIST[0];
@@ -320,6 +178,166 @@ async function runRecognitionFeedback() {
     `🧠 Basic check: click mic again and say it clearly for recognition (browser limitation).<br>
      <span style="color:#64748b;font-weight:700;">Tip: Chrome works best.</span>`
   );
+}
+
+// ----------------------
+// Quiz (multiple choice)
+// ----------------------
+const startQuizBtn = document.getElementById("startQuizBtn");
+const quizArea = document.getElementById("quizArea");
+const quizCount = document.getElementById("quizCount");
+const quizScoreEl = document.getElementById("quizScore");
+const quizWord = document.getElementById("quizWord");
+const quizOptions = document.getElementById("quizOptions");
+const quizFeedback = document.getElementById("quizFeedback");
+const nextQuizBtn = document.getElementById("nextQuizBtn");
+
+const QUIZ_TOTAL = WORDS.length;
+let quizOrder = [];
+let quizQuestionIndex = 0;
+let quizScore = 0;
+let quizCurrentWordIndex = null;
+let quizAnswered = false;
+
+function shuffleInPlace(arr) {
+  for (let j = arr.length - 1; j > 0; j--) {
+    const k = Math.floor(Math.random() * (j + 1));
+    [arr[j], arr[k]] = [arr[k], arr[j]];
+  }
+  return arr;
+}
+
+function getTargetLabel() {
+  return ({ en: "English", fr: "French", de: "Deutsch" }[TARGET_LANG]) || "English";
+}
+
+function getTranslationFor(idx) {
+  const item = WORDS[idx];
+  return (item.translations && item.translations[TARGET_LANG]) || "";
+}
+
+function buildQuizOptions(correctIdx) {
+  const options = [];
+  const usedLabels = new Set();
+
+  const pushOption = (idx, isCorrect) => {
+    const label = getTranslationFor(idx);
+    if (!label || usedLabels.has(label)) return;
+    usedLabels.add(label);
+    options.push({ idx, label, isCorrect });
+  };
+
+  pushOption(correctIdx, true);
+
+  const candidateIdxs = Array.from({ length: WORDS.length }, (_, n) => n).filter(
+    (n) => n !== correctIdx
+  );
+  shuffleInPlace(candidateIdxs);
+
+  for (const cand of candidateIdxs) {
+    if (options.length >= 4) break;
+    pushOption(cand, false);
+  }
+
+  return shuffleInPlace(options);
+}
+
+function resetQuizUI() {
+  if (!quizArea) return;
+  quizOptions.innerHTML = "";
+  if (quizFeedback) quizFeedback.textContent = "";
+  if (nextQuizBtn) nextQuizBtn.disabled = true;
+}
+
+function setQuizMeta() {
+  if (!quizCount || !quizScoreEl) return;
+  quizCount.textContent = `Question ${quizQuestionIndex + 1}/${QUIZ_TOTAL}`;
+  quizScoreEl.textContent = `Score: ${quizScore}/${QUIZ_TOTAL}`;
+}
+
+function showFinalScore() {
+  if (!quizFeedback) return;
+  quizFeedback.textContent = `Finished! Your score: ${quizScore}/${QUIZ_TOTAL}.`;
+  if (nextQuizBtn) nextQuizBtn.disabled = true;
+}
+
+function renderQuizQuestion() {
+  if (!quizArea) return;
+
+  resetQuizUI();
+  quizAnswered = false;
+  quizCurrentWordIndex = quizOrder[quizQuestionIndex];
+
+  setQuizMeta();
+
+  const item = WORDS[quizCurrentWordIndex];
+  if (quizWord) quizWord.textContent = item.text;
+
+  const opts = buildQuizOptions(quizCurrentWordIndex);
+  opts.forEach((opt) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn opt";
+    btn.textContent = opt.label;
+    btn.dataset.correct = opt.isCorrect ? "1" : "0";
+    quizOptions.appendChild(btn);
+  });
+
+  quizOptions.querySelectorAll(".opt").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (quizAnswered) return;
+      quizAnswered = true;
+
+      const isCorrect = btn.dataset.correct === "1";
+      if (isCorrect) {
+        btn.classList.add("correct");
+        quizScore++;
+        setQuizMeta();
+        if (quizFeedback) quizFeedback.textContent = "✅ Correct! Nice job.";
+      } else {
+        btn.classList.add("wrong");
+        const correctBtn = quizOptions.querySelector('.opt[data-correct="1"]');
+        if (correctBtn) correctBtn.classList.add("correct");
+        const correctLabel = getTranslationFor(quizCurrentWordIndex);
+        if (quizFeedback)
+          quizFeedback.textContent = `Not quite. Correct answer: ${correctLabel}.`;
+      }
+
+      if (nextQuizBtn) nextQuizBtn.disabled = false;
+    });
+  });
+}
+
+function ensureQuizVisible() {
+  if (!quizArea) return;
+  quizArea.hidden = false;
+  if (startQuizBtn) startQuizBtn.hidden = true;
+}
+
+function startQuiz() {
+  if (!quizArea || !startQuizBtn) return;
+
+  quizOrder = shuffleInPlace(Array.from({ length: WORDS.length }, (_, n) => n));
+  quizQuestionIndex = 0;
+  quizScore = 0;
+
+  ensureQuizVisible();
+  renderQuizQuestion();
+}
+
+if (startQuizBtn) {
+  startQuizBtn.addEventListener("click", startQuiz);
+}
+
+if (nextQuizBtn) {
+  nextQuizBtn.addEventListener("click", () => {
+    if (quizQuestionIndex < QUIZ_TOTAL - 1) {
+      quizQuestionIndex++;
+      renderQuizQuestion();
+    } else {
+      showFinalScore();
+    }
+  });
 }
 
 document.documentElement.lang = PRACTICE_LANG;

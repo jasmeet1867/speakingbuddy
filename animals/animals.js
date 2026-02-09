@@ -376,6 +376,30 @@ document.documentElement.lang = PRACTICE_LANG;
 setHint();
 updateUI();
 
+// Shared quiz wiring (see quiz-shared.js)
+// - words:      category WORDS array (each item has .text and .translations)
+// - targetLang: which translation to quiz on (en | fr | de)
+// - ids:        DOM element ids for the quiz UI
+// This same pattern is used in every category page so new
+// categories only need WORDS + these ids to get a quiz.
+if (window.createTranslationQuiz) {
+  window.createTranslationQuiz({
+    words: WORDS,
+    targetLang: TARGET_LANG,
+    ids: {
+      startBtn: "startQuizBtn",
+      area: "quizArea",
+      count: "quizCount",
+      score: "quizScore",
+      word: "quizWord",
+      options: "quizOptions",
+      feedback: "quizFeedback",
+      nextBtn: "nextQuizBtn",
+    },
+    showIntro: true,
+  });
+}
+
 window.addEventListener("beforeunload", () => {
   try {
     stopMeter();

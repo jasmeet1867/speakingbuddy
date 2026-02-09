@@ -222,171 +222,6 @@ function cleanupRecording() {
 }
 
 // ----------------------
-// Quiz (MCQ)
-// ----------------------
-function shuffleInPlace(arr) {
-  for (let j = arr.length - 1; j > 0; j--) {
-    const k = Math.floor(Math.random() * (j + 1));
-    [arr[j], arr[k]] = [arr[k], arr[j]];
-  }
-  return arr;
-}
-
-function getTargetLabel() {
-  return ({ en: "English", fr: "French", de: "Deutsch" }[TARGET_LANG]) || "English";
-}
-
-function getTranslationFor(idx) {
-  const item = WORDS[idx];
-  return (item.translations && item.translations[TARGET_LANG]) || "";
-}
-
-function buildQuizOptions(correctIdx) {
-  const options = [];
-  const usedLabels = new Set();
-
-  const pushOption = (idx, isCorrect) => {
-    const base = getTranslationFor(idx) || WORDS[idx].text;
-    let label = base;
-    if (usedLabels.has(label)) label = `${base} (${WORDS[idx].text})`;
-    if (usedLabels.has(label)) label = `${label} #${idx + 1}`;
-    usedLabels.add(label);
-    options.push({ idx, label, isCorrect });
-  };
-
-  pushOption(correctIdx, true);
-
-  const candidateIdxs = Array.from({ length: WORDS.length }, (_, n) => n).filter(
-    (n) => n !== correctIdx
-  );
-  shuffleInPlace(candidateIdxs);
-
-  for (const cand of candidateIdxs) {
-    if (options.length >= 4) break;
-    pushOption(cand, false);
-  }
-
-  return shuffleInPlace(options).slice(0, 4);
-}
-
-function resetQuizUI() {
-  if (!quizFeedback) return;
-  quizFeedback.textContent = "";
-  nextQuizBtn.disabled = true;
-  quizAnswered = false;
-}
-
-function setQuizMeta() {
-  const total = quizOrder.length || Math.min(QUIZ_TOTAL, WORDS.length);
-  const qNum = Math.min(quizQuestionIndex + 1, total);
-  if (quizCount) quizCount.textContent = `Question ${qNum}/${total}`;
-  if (quizScoreEl) quizScoreEl.textContent = `Score: ${quizScore}/${total}`;
-}
-
-function showFinalScore() {
-  const total = quizOrder.length;
-  if (quizCount) quizCount.textContent = `Finished`;
-  if (quizScoreEl) quizScoreEl.textContent = `Score: ${quizScore}/${total}`;
-
-  if (quizWord) quizWord.textContent = "Quiz complete";
-  if (quizOptions) quizOptions.innerHTML = "";
-  if (quizFeedback) quizFeedback.innerHTML = `✅ Your score: <b>${quizScore}/${total}</b>`;
-  if (nextQuizBtn) nextQuizBtn.disabled = true;
-}
-
-function renderQuizQuestion() {
-  if (!quizArea || !quizWord || !quizOptions || !quizFeedback) return;
-
-  resetQuizUI();
-
-  const total = quizOrder.length;
-  if (quizQuestionIndex >= total) {
-    showFinalScore();
-    return;
-  }
-
-  setQuizMeta();
-
-  const idx = quizOrder[quizQuestionIndex];
-  quizCurrentWordIndex = idx;
-  quizWord.textContent = WORDS[idx].text;
-
-  const opts = buildQuizOptions(idx);
-  quizOptions.innerHTML = "";
-
-  opts.forEach((opt) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "btn opt";
-    btn.textContent = opt.label;
-    btn.dataset.correct = opt.isCorrect ? "1" : "0";
-
-    btn.addEventListener("click", () => {
-      if (quizAnswered) return;
-      quizAnswered = true;
-
-      const buttons = quizOptions.querySelectorAll("button.opt");
-      buttons.forEach((b) => (b.disabled = true));
-
-      const isCorrect = btn.dataset.correct === "1";
-      if (isCorrect) {
-        btn.classList.add("correct");
-        quizScore += 1;
-        quizFeedback.innerHTML = `✅ Correct! (${getTargetLabel()})`;
-      } else {
-        btn.classList.add("wrong");
-        const correct = opts.find((o) => o.isCorrect);
-        quizFeedback.innerHTML = `❌ Not quite. Correct answer: <b>${correct?.label || ""}</b>`;
-        const correctBtn = Array.from(buttons).find((b) => b.dataset.correct === "1");
-        if (correctBtn) correctBtn.classList.add("correct");
-      }
-
-      setQuizMeta();
-
-      nextQuizBtn.disabled = false;
-    });
-
-    quizOptions.appendChild(btn);
-  });
-}
-
-function ensureQuizVisible() {
-  if (!quizArea) return;
-  quizArea.hidden = false;
-}
-
-function startQuiz() {
-  ensureQuizVisible();
-
-  // Build a non-repeating order (shuffle the whole list and take first N)
-  quizOrder = Array.from({ length: WORDS.length }, (_, n) => n);
-  shuffleInPlace(quizOrder);
-  quizOrder = quizOrder.slice(0, Math.min(QUIZ_TOTAL, WORDS.length));
-
-  quizQuestionIndex = 0;
-  quizScore = 0;
-  quizCurrentWordIndex = null;
-  quizAnswered = false;
-
-  renderQuizQuestion();
-}
-
-if (startQuizBtn) {
-  startQuizBtn.addEventListener("click", () => {
-    startQuiz();
-    startQuizBtn.textContent = "Restart Quiz";
-  });
-}
-
-if (nextQuizBtn) {
-  nextQuizBtn.addEventListener("click", () => {
-    // Move to next question
-    quizQuestionIndex += 1;
-    renderQuizQuestion();
-  });
-}
-
-// ----------------------
 // Back
 // ----------------------
 if (backBtn) {
@@ -614,9 +449,23 @@ document.documentElement.lang = PRACTICE_LANG;
 setHint();
 updateUI();
 
-// Keep quiz hint text aligned with the selected translation target
-if (quizFeedback) {
-  quizFeedback.textContent = `Quiz answers are in ${getTargetLabel()}.`;
+if (window.createTranslationQuiz) {
+  window.createTranslationQuiz({
+    words: WORDS,
+    targetLang: TARGET_LANG,
+    limit: QUIZ_TOTAL,
+    ids: {
+      startBtn: "startQuizBtn",
+      area: "quizArea",
+      count: "quizCount",
+      score: "quizScore",
+      word: "quizWord",
+      options: "quizOptions",
+      feedback: "quizFeedback",
+      nextBtn: "nextQuizBtn",
+    },
+    showIntro: true,
+  });
 }
 
 window.addEventListener("beforeunload", () => {
