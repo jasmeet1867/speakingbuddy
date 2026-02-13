@@ -1,8 +1,21 @@
 const languageGroup = document.getElementById("languageGroup");
 const difficultyGroup = document.getElementById("difficultyGroup");
+const categoriesGrid = document.getElementById("categoriesGrid");
 
 const STORAGE_LANG = "selectedLanguage";
 const STORAGE_DIFFICULTY = "selectedDifficulty";
+
+// Emoji map for known categories
+const CATEGORY_EMOJI = {
+  greetings: "👋",
+  animals: "🐾",
+  house: "🏠",
+  outdoor: "🌳",
+  family: "👨‍👩‍👧",
+  food: "🍔",
+  drinks: "🥤",
+  colours: "🎨",
+};
 
 function setTranslationTarget(lang) {
   localStorage.setItem(STORAGE_LANG, lang);
@@ -30,45 +43,22 @@ function getState() {
   };
 }
 
-function wireCategories() {
-  const cards = document.querySelectorAll(".categories .card");
-  if (!cards.length) return;
+function renderCategories(categories) {
+  if (!categoriesGrid) return;
+  categoriesGrid.innerHTML = "";
 
-  const categoryIds = [
-    "greetings",
-    "animals",
-    "home",
-    "travel",
-    "family",
-    "food",
-    "numbers",
-    "colors",
-  ];
-
-  cards.forEach((card, i) => {
-    const category = categoryIds[i] || `cat${i + 1}`;
-    card.dataset.category = category;
-
+  categories.forEach((cat) => {
+    const card = document.createElement("div");
+    card.className = "card";
     card.setAttribute("role", "button");
     card.setAttribute("tabindex", "0");
 
+    const emoji = CATEGORY_EMOJI[cat.name] || "📚";
+    card.innerHTML = `<span class="emoji">${emoji}</span> <span>${cat.display_name}</span><br><span class="small">${cat.word_count} word${cat.word_count !== 1 ? "s" : ""}</span>`;
+
     const go = () => {
       const { lang, difficulty } = getState();
-
-      // ✅ Greetings → greeting/greetings.html with params
-      if (category === "greetings") {
-        window.location.href = `greeting/greetings.html?lang=${encodeURIComponent(
-          lang
-        )}&mode=${encodeURIComponent(difficulty)}`;
-        return;
-      }
-
-      // Other categories → their own folder page with params
-      window.location.href = `${encodeURIComponent(
-        category
-      )}/${encodeURIComponent(category)}.html?lang=${encodeURIComponent(
-        lang
-      )}&mode=${encodeURIComponent(difficulty)}`;
+      window.location.href = `topic.html?category=${encodeURIComponent(cat.name)}&lang=${encodeURIComponent(lang)}&mode=${encodeURIComponent(difficulty)}`;
     };
 
     card.addEventListener("click", go);
@@ -78,7 +68,21 @@ function wireCategories() {
         go();
       }
     });
+
+    categoriesGrid.appendChild(card);
   });
+}
+
+async function loadCategories() {
+  try {
+    const categories = await fetchCategories();
+    renderCategories(categories);
+  } catch (err) {
+    console.error("Failed to load categories:", err);
+    if (categoriesGrid) {
+      categoriesGrid.innerHTML = `<div class="card" style="grid-column:1/-1;color:var(--muted)">⚠ Could not load categories. Is the backend running?</div>`;
+    }
+  }
 }
 
 function wireDifficulty() {
@@ -113,5 +117,5 @@ function wireLanguages() {
 
   wireLanguages();
   wireDifficulty();
-  wireCategories();
+  loadCategories();
 })();
