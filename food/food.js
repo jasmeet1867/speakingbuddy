@@ -33,67 +33,18 @@ const PRACTICE_LOCALE = "de-DE";
 // Structure: { text, phon, translations: {en, fr, de}, accept[] }
 // ----------------------
 const WORDS = [
-  {
-    text: "Hallo",
-    phon: "HAH-lo",
-    translations: { en: "Hello", fr: "Bonjour", de: "Hallo" },
-    accept: ["hallo"],
-  },
-  {
-    text: "Hi",
-    phon: "hee",
-    translations: { en: "Hi", fr: "Salut", de: "Hi" },
-    accept: ["hi"],
-  },
-  {
-    text: "Guten Morgen",
-    phon: "GOO-ten MOR-gen",
-    translations: { en: "Good morning", fr: "Bonjour", de: "Guten Morgen" },
-    accept: ["guten morgen"],
-  },
-  {
-    text: "Guten Tag",
-    phon: "GOO-ten tahk",
-    translations: { en: "Good afternoon / Good day", fr: "Bonjour", de: "Guten Tag" },
-    accept: ["guten tag"],
-  },
-  {
-    text: "Guten Abend",
-    phon: "GOO-ten AH-bent",
-    translations: { en: "Good evening", fr: "Bonsoir", de: "Guten Abend" },
-    accept: ["guten abend"],
-  },
-  {
-    text: "Wie geht’s?",
-    phon: "vee gates",
-    translations: { en: "How are you?", fr: "Comment ça va ?", de: "Wie geht’s?" },
-    accept: ["wie geht's", "wie gehts", "wie geht’s"],
-  },
-  {
-    text: "Freut mich",
-    phon: "froyte mikh",
-    translations: { en: "Nice to meet you", fr: "Enchanté", de: "Freut mich" },
-    accept: ["freut mich"],
-  },
-  {
-    text: "Bitte",
-    phon: "BIT-tuh",
-    translations: { en: "Please / You're welcome", fr: "S’il vous plaît", de: "Bitte" },
-    accept: ["bitte"],
-  },
-  {
-    text: "Danke",
-    phon: "DAHN-kuh",
-    translations: { en: "Thank you", fr: "Merci", de: "Danke" },
-    accept: ["danke"],
-  },
-  {
-    text: "Auf Wiedersehen",
-    phon: "owf VEE-der-zayn",
-    translations: { en: "Goodbye", fr: "Au revoir", de: "Auf Wiedersehen" },
-    accept: ["auf wiedersehen"],
-  },
+  { text: "Brot", phon: "broht", translations: { en: "Bread", fr: "Pain", de: "Brot" }, accept: ["brot"] },
+  { text: "Wasser", phon: "VAS-ser", translations: { en: "Water", fr: "Eau", de: "Wasser" }, accept: ["wasser"] },
+  { text: "Milch", phon: "milkh", translations: { en: "Milk", fr: "Lait", de: "Milch" }, accept: ["milch"] },
+  { text: "Käse", phon: "KAE-zeh", translations: { en: "Cheese", fr: "Fromage", de: "Käse" }, accept: ["käse", "kase"] },
+  { text: "Apfel", phon: "AP-fel", translations: { en: "Apple", fr: "Pomme", de: "Apfel" }, accept: ["apfel"] },
+  { text: "Banane", phon: "bah-NAH-neh", translations: { en: "Banana", fr: "Banane", de: "Banane" }, accept: ["banane"] },
+  { text: "Kartoffel", phon: "kar-TOF-fel", translations: { en: "Potato", fr: "Pomme de terre", de: "Kartoffel" }, accept: ["kartoffel"] },
+  { text: "Suppe", phon: "ZOOP-peh", translations: { en: "Soup", fr: "Soupe", de: "Suppe" }, accept: ["suppe"] },
+  { text: "Salat", phon: "zah-LAHT", translations: { en: "Salad", fr: "Salade", de: "Salat" }, accept: ["salat"] },
+  { text: "Kaffee", phon: "KAF-fay", translations: { en: "Coffee", fr: "Café", de: "Kaffee" }, accept: ["kaffee"] },
 ];
+
 
 // ----------------------
 // Elements
