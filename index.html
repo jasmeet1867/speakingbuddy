@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Practice Landing</title>
+  <title>SpeakingBuddy – Luxembourgish Practice</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -28,8 +28,8 @@
   <main>
 
     <section class="hero">
-      <h2 class="appname" data-i18n="heroTitle">Practice <span>Pronunciation Deutsch</span></h2>
-      <p class="subtitle" data-i18n="heroSubtitle">
+      <h2 class="appname">Practice <span>Luxembourgish</span></h2>
+      <p class="subtitle">
         Choose your difficulty, translation language, and start practicing real-world words.
       </p>
     </section>
@@ -54,22 +54,17 @@
     </section>
 
     <section class="categories-section">
-      <h3 data-i18n="categoryTitle">Choose a Category</h3>
-
-      <div class="categories">
-        <div class="card"><span class="emoji">👋</span> <span data-i18n="catGreetings">Greetings</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
-        <div class="card"><span class="emoji">🐾</span> <span data-i18n="catAnimals">Animals</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
-        <div class="card"><span class="emoji">🏠</span> <span data-i18n="catHome">Home</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
-        <div class="card"><span class="emoji">🚗</span> <span data-i18n="catTravel">Travel</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
-        <div class="card"><span class="emoji">👨‍👩‍👧</span> <span data-i18n="catFamily">Family</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
-        <div class="card"><span class="emoji">🍔</span> <span data-i18n="catFood">Food</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
-        <div class="card"><span class="emoji">🔢</span> <span data-i18n="catNumbers">Numbers</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
-        <div class="card"><span class="emoji">🎨</span> <span data-i18n="catColors">Colors</span><br><span class="small" data-i18n="tenWords">10 words</span></div>
+      <h3>Choose a Category</h3>
+      <div class="categories" id="categoriesGrid">
+        <!-- Dynamically populated from API -->
+        <div class="card loading-card">Loading categories...</div>
       </div>
     </section>
 
   </main>
 
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Environment
+.env
+.venv/
+venv/
+env/
+
+# Database
+data/*.db
+data/*.db-wal
+data/*.db-shm
+
+# Audio (large files — tracked via Git LFS or excluded)
+reference_audio/*.wav
+reference_audio/*.m4a
+reference_audio/*.ogg
+reference_audio/*.mp3
+reference_audio_raw/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp upload files
+tmp/
