@@ -10,7 +10,7 @@
 
   <header class="topbar">
     <div class="topbar-inner">
-      <button class="icon-btn" id="backBtn" title="Back">
+      <button type="button" class="icon-btn" id="backBtn" title="Back">
         ← Back
       </button>
 
@@ -42,14 +42,14 @@
 
       <!-- Listen row: plays real audio from the API -->
       <div class="listen-row">
-        <button class="btn" id="listenBtn">🔊 Listen</button>
+        <button type="button" class="btn" id="listenBtn">🔊 Listen</button>
       </div>
 
       <!-- Record / Playback / Retry -->
       <div class="actions">
-        <button class="round rec" id="recordBtn" title="Record">🎙️</button>
-        <button class="round" id="playBtn" title="Play recording" disabled>▶️</button>
-        <button class="round" id="retryBtn" title="Retry" disabled>↺</button>
+        <button type="button" class="round rec" id="recordBtn" title="Record">🎙️</button>
+        <button type="button" class="round" id="playBtn" title="Play recording" disabled>▶️</button>
+        <button type="button" class="round" id="retryBtn" title="Retry" disabled>↺</button>
       </div>
 
       <div class="mic-hint" id="micHint">Tap the microphone to record</div>
@@ -63,7 +63,7 @@
 
       <!-- Evaluate pronunciation -->
       <div class="evaluate-row" id="evaluateRow" style="display:none">
-        <button class="btn primary" id="evaluateBtn">📊 Evaluate Pronunciation</button>
+        <button type="button" class="btn primary" id="evaluateBtn">📊 Evaluate Pronunciation</button>
       </div>
 
       <!-- Feedback / Score -->
@@ -86,8 +86,8 @@
 
       <!-- Nav -->
       <div class="nav">
-        <button class="btn ghost" id="prevBtn">← Previous</button>
-        <button class="btn primary" id="nextBtn">Next →</button>
+        <button type="button" class="btn ghost" id="prevBtn">← Previous</button>
+        <button type="button" class="btn primary" id="nextBtn">Next →</button>
       </div>
     </section>
 

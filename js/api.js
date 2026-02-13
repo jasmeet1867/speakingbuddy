@@ -28,10 +28,19 @@ async function checkPronunciation(wordId, audioBlob) {
   form.append("word_id", String(wordId));
   form.append("audio", audioBlob, "recording.webm");
 
+  console.log("[API] POST /api/pronunciation/check  word_id:", wordId, "blob size:", audioBlob.size);
+
   const res = await fetch(`${API_BASE_URL}/api/pronunciation/check`, {
     method: "POST",
     body: form,
   });
-  if (!res.ok) throw new Error(`Pronunciation check failed: ${res.status}`);
+
+  console.log("[API] Response status:", res.status);
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("[API] Error body:", text);
+    throw new Error(`Pronunciation check failed: ${res.status} — ${text}`);
+  }
   return res.json(); // {score, feedback, breakdown, improvements, suggestions}
 }

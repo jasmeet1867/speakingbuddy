@@ -268,15 +268,25 @@ playBtn.addEventListener("click", () => {
 });
 
 // ── Evaluate Pronunciation ────────────────────────────────
-evaluateBtn.addEventListener("click", async () => {
-  if (!recordedBlob || !WORDS.length) return;
+evaluateBtn.addEventListener("click", async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  console.log("[Evaluate] clicked, recordedBlob:", recordedBlob, "WORDS.length:", WORDS.length);
+
+  if (!recordedBlob || !WORDS.length) {
+    console.warn("[Evaluate] No recording or words — aborting.");
+    return;
+  }
   const word = WORDS[i];
+  console.log("[Evaluate] Sending word_id:", word.id);
 
   evaluateBtn.disabled = true;
   evaluateBtn.textContent = "⏳ Analyzing…";
 
   try {
     const result = await checkPronunciation(word.id, recordedBlob);
+    console.log("[Evaluate] Result:", result);
     renderScore(result);
   } catch (err) {
     console.error("Pronunciation check error:", err);
@@ -329,7 +339,16 @@ function setBar(name, value) {
 }
 
 // ── Bootstrap ─────────────────────────────────────────────
+let _initRun = false;
+
 async function init() {
+  if (_initRun) {
+    console.warn("[INIT] init() called again — skipping (already ran).");
+    return;
+  }
+  _initRun = true;
+  console.log("[INIT] page loaded at", new Date().toISOString());
+
   // Set page header
   pageTitle.textContent = CATEGORY.charAt(0).toUpperCase() + CATEGORY.slice(1);
   categoryEmoji.textContent = CATEGORY_EMOJI[CATEGORY] || "📚";
