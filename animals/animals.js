@@ -33,16 +33,66 @@ const PRACTICE_LOCALE = "de-DE";
 // Structure: { text, phon, translations: {en, fr, de}, accept[] }
 // ----------------------
 const WORDS = [
-  { text: "Hund", phon: "hoont", translations: { en: "Dog", fr: "Chien", de: "Hund" }, accept: ["hund"] },
-  { text: "Katze", phon: "KAH-tsuh", translations: { en: "Cat", fr: "Chat", de: "Katze" }, accept: ["katze"] },
-  { text: "Vogel", phon: "FOH-gul", translations: { en: "Bird", fr: "Oiseau", de: "Vogel" }, accept: ["vogel"] },
-  { text: "Pferd", phon: "pfairt", translations: { en: "Horse", fr: "Cheval", de: "Pferd" }, accept: ["pferd"] },
-  { text: "Kuh", phon: "koo", translations: { en: "Cow", fr: "Vache", de: "Kuh" }, accept: ["kuh"] },
-  { text: "Schwein", phon: "shvine", translations: { en: "Pig", fr: "Cochon", de: "Schwein" }, accept: ["schwein"] },
-  { text: "Fisch", phon: "fish", translations: { en: "Fish", fr: "Poisson", de: "Fisch" }, accept: ["fisch"] },
-  { text: "Maus", phon: "mows", translations: { en: "Mouse", fr: "Souris", de: "Maus" }, accept: ["maus"] },
-  { text: "Bär", phon: "bear", translations: { en: "Bear", fr: "Ours", de: "Bär" }, accept: ["bär", "bar"] },
-  { text: "Kaninchen", phon: "kah-NIN-khen", translations: { en: "Rabbit", fr: "Lapin", de: "Kaninchen" }, accept: ["kaninchen"] },
+  {
+    text: "Hallo",
+    phon: "HAH-lo",
+    translations: { en: "Hello", fr: "Bonjour", de: "Hallo" },
+    accept: ["hallo"],
+  },
+  {
+    text: "Hi",
+    phon: "hee",
+    translations: { en: "Hi", fr: "Salut", de: "Hi" },
+    accept: ["hi"],
+  },
+  {
+    text: "Guten Morgen",
+    phon: "GOO-ten MOR-gen",
+    translations: { en: "Good morning", fr: "Bonjour", de: "Guten Morgen" },
+    accept: ["guten morgen"],
+  },
+  {
+    text: "Guten Tag",
+    phon: "GOO-ten tahk",
+    translations: { en: "Good afternoon / Good day", fr: "Bonjour", de: "Guten Tag" },
+    accept: ["guten tag"],
+  },
+  {
+    text: "Guten Abend",
+    phon: "GOO-ten AH-bent",
+    translations: { en: "Good evening", fr: "Bonsoir", de: "Guten Abend" },
+    accept: ["guten abend"],
+  },
+  {
+    text: "Wie geht’s?",
+    phon: "vee gates",
+    translations: { en: "How are you?", fr: "Comment ça va ?", de: "Wie geht’s?" },
+    accept: ["wie geht's", "wie gehts", "wie geht’s"],
+  },
+  {
+    text: "Freut mich",
+    phon: "froyte mikh",
+    translations: { en: "Nice to meet you", fr: "Enchanté", de: "Freut mich" },
+    accept: ["freut mich"],
+  },
+  {
+    text: "Bitte",
+    phon: "BIT-tuh",
+    translations: { en: "Please / You're welcome", fr: "S’il vous plaît", de: "Bitte" },
+    accept: ["bitte"],
+  },
+  {
+    text: "Danke",
+    phon: "DAHN-kuh",
+    translations: { en: "Thank you", fr: "Merci", de: "Danke" },
+    accept: ["danke"],
+  },
+  {
+    text: "Auf Wiedersehen",
+    phon: "owf VEE-der-zayn",
+    translations: { en: "Goodbye", fr: "Au revoir", de: "Auf Wiedersehen" },
+    accept: ["auf wiedersehen"],
+  },
 ];
 
 // ----------------------
@@ -69,11 +119,23 @@ const meterFill = document.getElementById("meterFill");
 
 const fbBody = document.getElementById("fbBody");
 
+// Quiz elements
+const startQuizBtn = document.getElementById("startQuizBtn");
+const quizArea = document.getElementById("quizArea");
+const quizCount = document.getElementById("quizCount");
+const quizScoreEl = document.getElementById("quizScore");
+const quizWord = document.getElementById("quizWord");
+const quizOptions = document.getElementById("quizOptions");
+const quizFeedback = document.getElementById("quizFeedback");
+const nextQuizBtn = document.getElementById("nextQuizBtn");
+
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 
+// ✅ NEW: hint label element
 const hintText = document.getElementById("hintText");
 
+// ✅ NEW: store the list that matches the dropdown (prevents index mismatch)
 let VOICE_LIST = [];
 
 // ----------------------
@@ -93,6 +155,14 @@ let meterRAF = null;
 
 let recognition = null;
 
+// Quiz state
+const QUIZ_TOTAL = 10;
+let quizOrder = [];
+let quizQuestionIndex = 0; // 0..(quizOrder.length-1)
+let quizScore = 0;
+let quizCurrentWordIndex = null;
+let quizAnswered = false;
+
 // ----------------------
 // Helpers
 // ----------------------
@@ -102,6 +172,7 @@ function setFeedback(html) {
 
 function setHint() {
   if (!hintText) return;
+
   hintText.textContent = "Say this";
 }
 
@@ -111,6 +182,7 @@ function updateUI() {
   promptWord.textContent = item.text;
   phonetic.textContent = item.phon;
 
+  // Show translation of the German prompt into the selected target language
   if (meaningText) {
     const labels = {
       en: "Translation (English)",
@@ -122,6 +194,7 @@ function updateUI() {
     meaningText.innerHTML = `${label}: <b>${translation}</b>`;
   }
 
+  // Audio-only mode hides word + meaning
   if (CURRENT_MODE === "audio") {
     promptWord.style.visibility = "hidden";
     if (meaningText) meaningText.style.visibility = "hidden";
@@ -146,6 +219,171 @@ function cleanupRecording() {
   recordedBlob = null;
   recordedChunks = [];
   meterFill.style.width = "0%";
+}
+
+// ----------------------
+// Quiz (MCQ)
+// ----------------------
+function shuffleInPlace(arr) {
+  for (let j = arr.length - 1; j > 0; j--) {
+    const k = Math.floor(Math.random() * (j + 1));
+    [arr[j], arr[k]] = [arr[k], arr[j]];
+  }
+  return arr;
+}
+
+function getTargetLabel() {
+  return ({ en: "English", fr: "French", de: "Deutsch" }[TARGET_LANG]) || "English";
+}
+
+function getTranslationFor(idx) {
+  const item = WORDS[idx];
+  return (item.translations && item.translations[TARGET_LANG]) || "";
+}
+
+function buildQuizOptions(correctIdx) {
+  const options = [];
+  const usedLabels = new Set();
+
+  const pushOption = (idx, isCorrect) => {
+    const base = getTranslationFor(idx) || WORDS[idx].text;
+    let label = base;
+    if (usedLabels.has(label)) label = `${base} (${WORDS[idx].text})`;
+    if (usedLabels.has(label)) label = `${label} #${idx + 1}`;
+    usedLabels.add(label);
+    options.push({ idx, label, isCorrect });
+  };
+
+  pushOption(correctIdx, true);
+
+  const candidateIdxs = Array.from({ length: WORDS.length }, (_, n) => n).filter(
+    (n) => n !== correctIdx
+  );
+  shuffleInPlace(candidateIdxs);
+
+  for (const cand of candidateIdxs) {
+    if (options.length >= 4) break;
+    pushOption(cand, false);
+  }
+
+  return shuffleInPlace(options).slice(0, 4);
+}
+
+function resetQuizUI() {
+  if (!quizFeedback) return;
+  quizFeedback.textContent = "";
+  nextQuizBtn.disabled = true;
+  quizAnswered = false;
+}
+
+function setQuizMeta() {
+  const total = quizOrder.length || Math.min(QUIZ_TOTAL, WORDS.length);
+  const qNum = Math.min(quizQuestionIndex + 1, total);
+  if (quizCount) quizCount.textContent = `Question ${qNum}/${total}`;
+  if (quizScoreEl) quizScoreEl.textContent = `Score: ${quizScore}/${total}`;
+}
+
+function showFinalScore() {
+  const total = quizOrder.length;
+  if (quizCount) quizCount.textContent = `Finished`;
+  if (quizScoreEl) quizScoreEl.textContent = `Score: ${quizScore}/${total}`;
+
+  if (quizWord) quizWord.textContent = "Quiz complete";
+  if (quizOptions) quizOptions.innerHTML = "";
+  if (quizFeedback) quizFeedback.innerHTML = `✅ Your score: <b>${quizScore}/${total}</b>`;
+  if (nextQuizBtn) nextQuizBtn.disabled = true;
+}
+
+function renderQuizQuestion() {
+  if (!quizArea || !quizWord || !quizOptions || !quizFeedback) return;
+
+  resetQuizUI();
+
+  const total = quizOrder.length;
+  if (quizQuestionIndex >= total) {
+    showFinalScore();
+    return;
+  }
+
+  setQuizMeta();
+
+  const idx = quizOrder[quizQuestionIndex];
+  quizCurrentWordIndex = idx;
+  quizWord.textContent = WORDS[idx].text;
+
+  const opts = buildQuizOptions(idx);
+  quizOptions.innerHTML = "";
+
+  opts.forEach((opt) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn opt";
+    btn.textContent = opt.label;
+    btn.dataset.correct = opt.isCorrect ? "1" : "0";
+
+    btn.addEventListener("click", () => {
+      if (quizAnswered) return;
+      quizAnswered = true;
+
+      const buttons = quizOptions.querySelectorAll("button.opt");
+      buttons.forEach((b) => (b.disabled = true));
+
+      const isCorrect = btn.dataset.correct === "1";
+      if (isCorrect) {
+        btn.classList.add("correct");
+        quizScore += 1;
+        quizFeedback.innerHTML = `✅ Correct! (${getTargetLabel()})`;
+      } else {
+        btn.classList.add("wrong");
+        const correct = opts.find((o) => o.isCorrect);
+        quizFeedback.innerHTML = `❌ Not quite. Correct answer: <b>${correct?.label || ""}</b>`;
+        const correctBtn = Array.from(buttons).find((b) => b.dataset.correct === "1");
+        if (correctBtn) correctBtn.classList.add("correct");
+      }
+
+      setQuizMeta();
+
+      nextQuizBtn.disabled = false;
+    });
+
+    quizOptions.appendChild(btn);
+  });
+}
+
+function ensureQuizVisible() {
+  if (!quizArea) return;
+  quizArea.hidden = false;
+}
+
+function startQuiz() {
+  ensureQuizVisible();
+
+  // Build a non-repeating order (shuffle the whole list and take first N)
+  quizOrder = Array.from({ length: WORDS.length }, (_, n) => n);
+  shuffleInPlace(quizOrder);
+  quizOrder = quizOrder.slice(0, Math.min(QUIZ_TOTAL, WORDS.length));
+
+  quizQuestionIndex = 0;
+  quizScore = 0;
+  quizCurrentWordIndex = null;
+  quizAnswered = false;
+
+  renderQuizQuestion();
+}
+
+if (startQuizBtn) {
+  startQuizBtn.addEventListener("click", () => {
+    startQuiz();
+    startQuizBtn.textContent = "Restart Quiz";
+  });
+}
+
+if (nextQuizBtn) {
+  nextQuizBtn.addEventListener("click", () => {
+    // Move to next question
+    quizQuestionIndex += 1;
+    renderQuizQuestion();
+  });
 }
 
 // ----------------------
@@ -375,6 +613,11 @@ async function runRecognitionFeedback() {
 document.documentElement.lang = PRACTICE_LANG;
 setHint();
 updateUI();
+
+// Keep quiz hint text aligned with the selected translation target
+if (quizFeedback) {
+  quizFeedback.textContent = `Quiz answers are in ${getTargetLabel()}.`;
+}
 
 window.addEventListener("beforeunload", () => {
   try {
