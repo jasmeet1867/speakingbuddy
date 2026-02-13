@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,7 +10,9 @@
 
   <header class="topbar">
     <div class="topbar-inner">
-      <button class="icon-btn" id="backBtn" title="Back">← Back</button>
+      <button class="icon-btn" id="backBtn" title="Back">
+        ← Back
+      </button>
 
       <div class="title">
         <span class="emoji">🍔</span>
@@ -71,6 +73,30 @@
         <div class="fb-title">Feedback</div>
         <div class="fb-body" id="fbBody">
           Record your voice and we’ll show a basic match check.
+        </div>
+      </div>
+
+      <div class="quiz" id="quiz">
+        <button class="btn" id="startQuizBtn" type="button">Start Quiz</button>
+
+        <div class="quiz-area" id="quizArea" hidden>
+          <div class="quiz-meta">
+            <div class="quiz-count" id="quizCount">Question 1/10</div>
+            <div class="quiz-score" id="quizScore">Score: 0/10</div>
+          </div>
+
+          <div class="quiz-top">
+            <div class="hint">Choose the correct translation</div>
+            <div class="quiz-word" id="quizWord">Hallo</div>
+          </div>
+
+          <div class="quiz-options" id="quizOptions"></div>
+
+          <div class="quiz-feedback" id="quizFeedback"></div>
+
+          <div class="quiz-actions">
+            <button class="btn ghost" id="nextQuizBtn" type="button" disabled>Next Question →</button>
+          </div>
         </div>
       </div>
 

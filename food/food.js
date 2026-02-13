@@ -1,5 +1,8 @@
 // food/food.js
 
+// ----------------------
+// Read translation target + difficulty
+// ----------------------
 const STORAGE_LANG = "selectedLanguage";
 const STORAGE_DIFFICULTY = "selectedDifficulty";
 
@@ -21,9 +24,14 @@ function getMode() {
 const TARGET_LANG = getLang();
 const CURRENT_MODE = getMode();
 
+// German is the only practiced language.
 const PRACTICE_LANG = "de";
 const PRACTICE_LOCALE = "de-DE";
 
+// ----------------------
+// Data (German food)
+// Structure: { text, phon, translations: {en, fr, de}, accept[] }
+// ----------------------
 const WORDS = [
   { text: "Brot", phon: "broht", translations: { en: "Bread", fr: "Pain", de: "Brot" }, accept: ["brot"] },
   { text: "Wasser", phon: "VAS-ser", translations: { en: "Water", fr: "Eau", de: "Wasser" }, accept: ["wasser"] },
@@ -37,6 +45,10 @@ const WORDS = [
   { text: "Kaffee", phon: "KAF-fay", translations: { en: "Coffee", fr: "Café", de: "Kaffee" }, accept: ["kaffee"] },
 ];
 
+
+// ----------------------
+// Elements
+// ----------------------
 const backBtn = document.getElementById("backBtn");
 const counter = document.getElementById("counter");
 const progressBar = document.getElementById("progressBar");
@@ -58,13 +70,28 @@ const meterFill = document.getElementById("meterFill");
 
 const fbBody = document.getElementById("fbBody");
 
+// Quiz elements
+const startQuizBtn = document.getElementById("startQuizBtn");
+const quizArea = document.getElementById("quizArea");
+const quizCount = document.getElementById("quizCount");
+const quizScoreEl = document.getElementById("quizScore");
+const quizWord = document.getElementById("quizWord");
+const quizOptions = document.getElementById("quizOptions");
+const quizFeedback = document.getElementById("quizFeedback");
+const nextQuizBtn = document.getElementById("nextQuizBtn");
+
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 
+// ✅ NEW: hint label element
 const hintText = document.getElementById("hintText");
 
+// ✅ NEW: store the list that matches the dropdown (prevents index mismatch)
 let VOICE_LIST = [];
 
+// ----------------------
+// State
+// ----------------------
 let i = 0;
 
 let mediaRecorder = null;
@@ -79,27 +106,46 @@ let meterRAF = null;
 
 let recognition = null;
 
+// Quiz state
+const QUIZ_TOTAL = 10;
+let quizOrder = [];
+let quizQuestionIndex = 0; // 0..(quizOrder.length-1)
+let quizScore = 0;
+let quizCurrentWordIndex = null;
+let quizAnswered = false;
+
+// ----------------------
+// Helpers
+// ----------------------
 function setFeedback(html) {
   fbBody.innerHTML = html;
 }
 
 function setHint() {
   if (!hintText) return;
+
   hintText.textContent = "Say this";
 }
 
 function updateUI() {
   const item = WORDS[i];
+
   promptWord.textContent = item.text;
   phonetic.textContent = item.phon;
 
+  // Show translation of the German prompt into the selected target language
   if (meaningText) {
-    const labels = { en: "Translation (English)", fr: "Translation (French)", de: "Translation (Deutsch)" };
+    const labels = {
+      en: "Translation (English)",
+      fr: "Translation (French)",
+      de: "Translation (Deutsch)",
+    };
     const label = labels[TARGET_LANG] || labels.en;
     const translation = (item.translations && item.translations[TARGET_LANG]) || "";
     meaningText.innerHTML = `${label}: <b>${translation}</b>`;
   }
 
+  // Audio-only mode hides word + meaning
   if (CURRENT_MODE === "audio") {
     promptWord.style.visibility = "hidden";
     if (meaningText) meaningText.style.visibility = "hidden";
@@ -126,12 +172,183 @@ function cleanupRecording() {
   meterFill.style.width = "0%";
 }
 
+// ----------------------
+// Quiz (MCQ)
+// ----------------------
+function shuffleInPlace(arr) {
+  for (let j = arr.length - 1; j > 0; j--) {
+    const k = Math.floor(Math.random() * (j + 1));
+    [arr[j], arr[k]] = [arr[k], arr[j]];
+  }
+  return arr;
+}
+
+function getTargetLabel() {
+  return ({ en: "English", fr: "French", de: "Deutsch" }[TARGET_LANG]) || "English";
+}
+
+function getTranslationFor(idx) {
+  const item = WORDS[idx];
+  return (item.translations && item.translations[TARGET_LANG]) || "";
+}
+
+function buildQuizOptions(correctIdx) {
+  const options = [];
+  const usedLabels = new Set();
+
+  const pushOption = (idx, isCorrect) => {
+    const base = getTranslationFor(idx) || WORDS[idx].text;
+    let label = base;
+    if (usedLabels.has(label)) label = `${base} (${WORDS[idx].text})`;
+    if (usedLabels.has(label)) label = `${label} #${idx + 1}`;
+    usedLabels.add(label);
+    options.push({ idx, label, isCorrect });
+  };
+
+  pushOption(correctIdx, true);
+
+  const candidateIdxs = Array.from({ length: WORDS.length }, (_, n) => n).filter(
+    (n) => n !== correctIdx
+  );
+  shuffleInPlace(candidateIdxs);
+
+  for (const cand of candidateIdxs) {
+    if (options.length >= 4) break;
+    pushOption(cand, false);
+  }
+
+  return shuffleInPlace(options).slice(0, 4);
+}
+
+function resetQuizUI() {
+  if (!quizFeedback) return;
+  quizFeedback.textContent = "";
+  nextQuizBtn.disabled = true;
+  quizAnswered = false;
+}
+
+function setQuizMeta() {
+  const total = quizOrder.length || Math.min(QUIZ_TOTAL, WORDS.length);
+  const qNum = Math.min(quizQuestionIndex + 1, total);
+  if (quizCount) quizCount.textContent = `Question ${qNum}/${total}`;
+  if (quizScoreEl) quizScoreEl.textContent = `Score: ${quizScore}/${total}`;
+}
+
+function showFinalScore() {
+  const total = quizOrder.length;
+  if (quizCount) quizCount.textContent = `Finished`;
+  if (quizScoreEl) quizScoreEl.textContent = `Score: ${quizScore}/${total}`;
+
+  if (quizWord) quizWord.textContent = "Quiz complete";
+  if (quizOptions) quizOptions.innerHTML = "";
+  if (quizFeedback) quizFeedback.innerHTML = `✅ Your score: <b>${quizScore}/${total}</b>`;
+  if (nextQuizBtn) nextQuizBtn.disabled = true;
+}
+
+function renderQuizQuestion() {
+  if (!quizArea || !quizWord || !quizOptions || !quizFeedback) return;
+
+  resetQuizUI();
+
+  const total = quizOrder.length;
+  if (quizQuestionIndex >= total) {
+    showFinalScore();
+    return;
+  }
+
+  setQuizMeta();
+
+  const idx = quizOrder[quizQuestionIndex];
+  quizCurrentWordIndex = idx;
+  quizWord.textContent = WORDS[idx].text;
+
+  const opts = buildQuizOptions(idx);
+  quizOptions.innerHTML = "";
+
+  opts.forEach((opt) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn opt";
+    btn.textContent = opt.label;
+    btn.dataset.correct = opt.isCorrect ? "1" : "0";
+
+    btn.addEventListener("click", () => {
+      if (quizAnswered) return;
+      quizAnswered = true;
+
+      const buttons = quizOptions.querySelectorAll("button.opt");
+      buttons.forEach((b) => (b.disabled = true));
+
+      const isCorrect = btn.dataset.correct === "1";
+      if (isCorrect) {
+        btn.classList.add("correct");
+        quizScore += 1;
+        quizFeedback.innerHTML = `✅ Correct! (${getTargetLabel()})`;
+      } else {
+        btn.classList.add("wrong");
+        const correct = opts.find((o) => o.isCorrect);
+        quizFeedback.innerHTML = `❌ Not quite. Correct answer: <b>${correct?.label || ""}</b>`;
+        const correctBtn = Array.from(buttons).find((b) => b.dataset.correct === "1");
+        if (correctBtn) correctBtn.classList.add("correct");
+      }
+
+      setQuizMeta();
+
+      nextQuizBtn.disabled = false;
+    });
+
+    quizOptions.appendChild(btn);
+  });
+}
+
+function ensureQuizVisible() {
+  if (!quizArea) return;
+  quizArea.hidden = false;
+}
+
+function startQuiz() {
+  ensureQuizVisible();
+
+  // Build a non-repeating order (shuffle the whole list and take first N)
+  quizOrder = Array.from({ length: WORDS.length }, (_, n) => n);
+  shuffleInPlace(quizOrder);
+  quizOrder = quizOrder.slice(0, Math.min(QUIZ_TOTAL, WORDS.length));
+
+  quizQuestionIndex = 0;
+  quizScore = 0;
+  quizCurrentWordIndex = null;
+  quizAnswered = false;
+
+  renderQuizQuestion();
+}
+
+if (startQuizBtn) {
+  startQuizBtn.addEventListener("click", () => {
+    startQuiz();
+    startQuizBtn.textContent = "Restart Quiz";
+  });
+}
+
+if (nextQuizBtn) {
+  nextQuizBtn.addEventListener("click", () => {
+    // Move to next question
+    quizQuestionIndex += 1;
+    renderQuizQuestion();
+  });
+}
+
+// ----------------------
+// Back
+// ----------------------
 if (backBtn) {
   backBtn.addEventListener("click", () => {
     window.location.href = "../index.html";
   });
 }
 
+// ----------------------
+// Next / Prev
+// ----------------------
 prevBtn.addEventListener("click", () => {
   if (i > 0) i--;
   updateUI();
@@ -142,11 +359,17 @@ nextBtn.addEventListener("click", () => {
   updateUI();
 });
 
+// ----------------------
+// Text-to-Speech (Listen)
+// ----------------------
 function loadVoices() {
   const voices = window.speechSynthesis?.getVoices?.() || [];
   const target = PRACTICE_LOCALE.toLowerCase();
 
-  const matching = voices.filter(v => (v.lang || "").toLowerCase().startsWith(target.slice(0, 2)));
+  const matching = voices.filter(v =>
+    (v.lang || "").toLowerCase().startsWith(target.slice(0, 2))
+  );
+
   VOICE_LIST = matching.length ? matching : voices;
 
   voiceSelect.innerHTML = "";
@@ -182,6 +405,9 @@ listenBtn.addEventListener("click", () => {
   window.speechSynthesis.speak(utter);
 });
 
+// ----------------------
+// Speech Recognition (basic feedback)
+// ----------------------
 function initRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return null;
@@ -194,6 +420,9 @@ function initRecognition() {
 }
 recognition = initRecognition();
 
+// ----------------------
+// Mic meter
+// ----------------------
 async function setupMeter(stream) {
   if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
   const source = audioContext.createMediaStreamSource(stream);
@@ -213,6 +442,7 @@ async function setupMeter(stream) {
     const rms = Math.sqrt(sum / data.length);
     const pct = Math.min(100, Math.max(0, Math.floor(rms * 220)));
     meterFill.style.width = pct + "%";
+
     meterRAF = requestAnimationFrame(tick);
   };
 
@@ -226,6 +456,9 @@ function stopMeter() {
   meterFill.style.width = "0%";
 }
 
+// ----------------------
+// Recording
+// ----------------------
 async function ensureMic() {
   if (audioStream) return audioStream;
   audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -306,6 +539,9 @@ playBtn.addEventListener("click", () => {
   a.play();
 });
 
+// ----------------------
+// Feedback logic (Recognition match)
+// ----------------------
 async function runRecognitionFeedback() {
   if (!recognition) {
     setFeedback(
@@ -322,9 +558,17 @@ async function runRecognitionFeedback() {
   );
 }
 
+// ----------------------
+// Init
+// ----------------------
 document.documentElement.lang = PRACTICE_LANG;
 setHint();
 updateUI();
+
+// Keep quiz hint text aligned with the selected translation target
+if (quizFeedback) {
+  quizFeedback.textContent = `Quiz answers are in ${getTargetLabel()}.`;
+}
 
 window.addEventListener("beforeunload", () => {
   try {
