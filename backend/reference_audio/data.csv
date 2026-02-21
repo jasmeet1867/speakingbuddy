@@ -1,0 +1,39 @@
+LOD Word reference,Audio Reference,Word Category,Luxembourgish,English,French,German
+LEIW1,leiw1,Animals,Léiw,lion,lion,Löwe
+HOND1,hond1,Animals,Hond,dog,chien,Hund
+KAZ1,kaz1,Animals,Kaz,cat,chat,Katze
+FUUSS2,fuuss2,Animals,Fuuss,fox,renard,Fuchs
+MAUS1,maus1,Animals,Maus,mouse,souris,Maus
+MOIEN2,moien2,Greetings,moien,good morning,bonjour,guten Morgen
+ADDI2,addi2,Greetings,äddi,goodbye,au revoir,tschüss
+BROUT1,brout1,Food,Brout,bread,pain,Brot
+IESSEN1,iessen1,Food,Iessen,meal,repas,Essen
+KUCH1,kuch1,Food,Kuch,cake,gâteau,Torte
+ZOPP1,zopp1,Food,Zopp,soup,soupe,Suppe
+KNIDDEL1,kniddel1,Food,Kniddel,flour dumpling,quenelle de farine,Mehlknödel
+APPARTEMENT1,appartement1,House,Appartement,flat,appartement,Wohnung
+STUFF1,stuff1,House,Stuff,living room,séjour,Wohnzimmer
+SCHLOFKUMMER1,schlofkummer1,House,Schlofkummer,bedroom,chambre à coucher,Schlafzimmer
+STULL1,stull1,House,Stull,chair,chaise,Stuhl
+KICHEN1,kichen1,House,Kichen,kitchen,cuisine,Küche
+BLO1,blo1,Colours,blo,blue,bleu,blau
+GRENG1,greng1,Colours,gréng,green,vert,grün
+GIEL1,giel1,Colours,giel,yellow,jaune,gelb
+ROUT1,rout1,Colours,rout,red,rouge,rot
+SCHWAARZ1,schwaarz1,Colours,schwaarz,black,noir,schwarz
+WAISS1,waiss1,Colours,wäiss,white,blanc,weiß
+MAMM1,mamm1,Family,Mamm,mother,mère,Mutter
+PAPP1,papp1,Family,Papp,father,père,Vater
+BRUDDER1,brudder1,Family,Brudder,brother,frère,Bruder
+SCHWESTER1,schwester1,Family,Schwëster,sister,sœur,Schwester
+KAND1,kand1,Family,Kand,child,enfant,Kind
+KIERCH1,kierch1,Outdoor,Kierch,Church,Église,Kirche
+ZUCH1,zuch1,Outdoor,Zuch,train,train,Zug
+VELO1,velo1,Outdoor,Vëlo,bike,vélo,Fahrrad
+BAM1,bam1,Outdoor,Bam,tree,arbre,Baum
+STROOSS1,strooss1,Outdoor,Strooss,street,rue,Straße
+GEDRENKS1,gedrenks1,Drinks,Gedrénks,drinks,boissons,Getränke
+JUS1,jus1,Drinks,Jus,juice,jus,Saft
+KAFFI1,kaffi1,Drinks,Kaffi,coffee,café,Kaffee
+TEI1,tei1,Drinks,Téi,tea,thé,Tee
+BEIER1,beier1,Drinks,Béier,beer,bière,Bier

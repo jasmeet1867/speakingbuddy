@@ -49,18 +49,31 @@ async def check_pronunciation(
     audio_filename = word_row["audio_filename"]
     ref_features_json = word_row["praat_features_json"]
 
-    # If no pre-computed features, compute on-the-fly from reference audio
-    ref_audio_path = settings.AUDIO_DIR / audio_filename
-    if not ref_features_json or ref_features_json == '{"placeholder": true}':
+    # If we have saved precomputed features, use them.
+    # Otherwise, attempt to compute from the reference audio file if present.
+    ref_features = None
+    if ref_features_json and ref_features_json != '{"placeholder": true}':
+        try:
+            ref_features = json.loads(ref_features_json)
+        except Exception:
+            # Fall back to computing from audio file below
+            ref_features = None
+
+    if ref_features is None:
+        # Need a reference audio file to compute features
+        if not audio_filename:
+            raise HTTPException(
+                status_code=400,
+                detail="No reference audio or precomputed features available for this word.",
+            )
+        ref_audio_path = settings.AUDIO_DIR / audio_filename
         if not ref_audio_path.exists():
             raise HTTPException(
-                status_code=500,
+                status_code=400,
                 detail="Reference audio file missing and no pre-computed features.",
             )
         logger.info("Computing reference features on-the-fly for word %d", word_id)
         ref_features = extract_all_praat_features(ref_audio_path)
-    else:
-        ref_features = json.loads(ref_features_json)
 
     # ── 1. Preprocess uploaded audio ────────────────────────
     raw_bytes = await audio.read()

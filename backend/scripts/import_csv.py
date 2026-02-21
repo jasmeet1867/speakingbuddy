@@ -103,9 +103,14 @@ def import_csv(csv_path: Path, db_path: Path, audio_dir: Path, *, clean: bool = 
             if not word_lb:
                 continue
 
-            # Validate audio file exists
-            if audio_file and not (audio_dir / audio_file).is_file():
+            # Validate audio file exists; do not store missing filenames in DB
+            audio_exists = bool(audio_file) and (audio_dir / audio_file).is_file()
+            if audio_file and not audio_exists:
                 missing_audio.append(audio_file)
+            if not audio_exists:
+                audio_file_db = None
+            else:
+                audio_file_db = audio_file
 
             conn.execute(
                 """
@@ -116,7 +121,7 @@ def import_csv(csv_path: Path, db_path: Path, audio_dir: Path, *, clean: bool = 
                 """,
                 (
                     row.get("LOD Word reference", "").strip(),
-                    audio_file or None,
+                    audio_file_db,
                     cat_id,
                     word_lb,
                     row.get("English", "").strip() or None,

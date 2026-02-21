@@ -18,8 +18,11 @@ pip install -r requirements.txt
 # Import word data (once you have the CSV + audio files)
 python -m scripts.import_csv --csv data/words.csv
 
+#then 
+
+python 
+
 # Run the server
-uvicorn app.main:app --reload --port 8000
 ```
 
 ## API Endpoints
