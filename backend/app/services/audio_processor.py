@@ -18,6 +18,12 @@ SILENCE_THRESH_DB = -40   # dBFS
 MIN_SILENCE_LEN_MS = 200  # ms
 TARGET_DBFS = -20.0       # RMS normalisation target
 
+# When user uploads are long, try a more aggressive split to isolate the
+# first word, and cap the analyzed segment for performance and scoring sanity.
+AGGRESSIVE_SILENCE_THRESH_DB = -35
+AGGRESSIVE_MIN_SILENCE_LEN_MS = 80
+MAX_ANALYSIS_LEN_MS = 3000
+
 
 def convert_to_wav(input_path: str | Path, output_path: str | Path | None = None) -> Path:
     """Convert any audio format to WAV (mono, SAMPLE_RATE).
@@ -109,7 +115,23 @@ def preprocess_upload(raw_bytes: bytes, original_filename: str = "upload.webm") 
     audio = AudioSegment.from_wav(str(wav_path))
     audio = normalize_audio(audio)
     audio = trim_silence(audio)
+
+    # First attempt: conservative splitting (avoids chopping inside a word)
     audio = split_first_word(audio)
+
+    # If the recording is still long, try a more aggressive split to catch
+    # short pauses between words in a sentence.
+    if len(audio) > MAX_ANALYSIS_LEN_MS:
+        audio = split_first_word(
+            audio,
+            silence_thresh=AGGRESSIVE_SILENCE_THRESH_DB,
+            min_silence_len=AGGRESSIVE_MIN_SILENCE_LEN_MS,
+        )
+
+    # Final safety cap: prevent extremely long utterances from dominating
+    # runtime and from being mistaken as a single word.
+    if len(audio) > MAX_ANALYSIS_LEN_MS:
+        audio = audio[:MAX_ANALYSIS_LEN_MS]
 
     # Overwrite the wav_path with the processed version
     audio.export(str(wav_path), format="wav")

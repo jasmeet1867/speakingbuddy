@@ -32,6 +32,43 @@ def generate_phonetic_feedback(
     improvements: list[str] = []
     suggestions: list[str] = []
 
+    # ── Utterance mismatch feedback (single-word expectation) ─────────
+    gate_detail = details.get("utterance_gate", {})
+    gate = gate_detail.get("gate", 1.0)
+    reason = gate_detail.get("reason", "ok")
+    if isinstance(gate, (int, float)) and float(gate) < 0.5 and reason in {"too_long", "too_short"}:
+        u_s = gate_detail.get("user_seconds")
+        r_s = gate_detail.get("ref_seconds")
+        if reason == "too_long":
+            improvements.append(
+                "It sounds like you recorded more than one word. "
+                "Please say only the target word (one clear attempt), then stop."
+            )
+        else:
+            improvements.append(
+                "Your recording is very short. Try saying the full word clearly."
+            )
+        if u_s is not None and r_s is not None:
+            suggestions.append(
+                f"Your recording was about {u_s}s (reference is ~{r_s}s)."
+            )
+
+    # ── Word mismatch feedback (formant gate) ─────────────────────────
+    mismatch_detail = details.get("word_mismatch_gate", {})
+    mismatch_gate = mismatch_detail.get("gate", 1.0)
+    mismatch_reason = mismatch_detail.get("reason", "ok")
+    if isinstance(mismatch_gate, (int, float)) and float(mismatch_gate) < 0.8 and mismatch_reason in {"low_formants", "very_low_formants"}:
+        improvements.append(
+            "This attempt doesn’t sound like the target word. Try to match the vowel sound and mouth shape from the reference audio."
+        )
+
+    mfcc_detail = details.get("mfcc_gate", {})
+    mfcc_gate = mfcc_detail.get("gate", 1.0)
+    if isinstance(mfcc_gate, (int, float)) and float(mfcc_gate) < 0.8:
+        improvements.append(
+            "The overall sound of your recording is quite different from the reference. Double-check you’re saying the same word, then try again."
+        )
+
     # ── Pitch feedback ──────────────────────────────────────
     pitch_score = breakdown.get("pitch", 100)
     if pitch_score < 60:

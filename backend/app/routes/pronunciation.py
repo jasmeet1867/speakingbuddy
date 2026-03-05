@@ -11,7 +11,7 @@ from app.database import get_db
 from app.config import settings
 from app.models import PronunciationResult, PronunciationBreakdown
 from app.services.audio_processor import preprocess_upload
-from app.services.praat_analyzer import extract_all_praat_features
+from app.services.praat_analyzer import extract_all_praat_features, extract_mfcc_features
 from app.services.feature_comparator import calculate_weighted_score
 from app.services.feedback_generator import generate_phonetic_feedback
 
@@ -74,6 +74,12 @@ async def check_pronunciation(
             )
         logger.info("Computing reference features on-the-fly for word %d", word_id)
         ref_features = extract_all_praat_features(ref_audio_path)
+    else:
+        # Backwards-compat: older DB rows may not include newly added features.
+        if "mfcc" not in ref_features and audio_filename:
+            ref_audio_path = settings.AUDIO_DIR / audio_filename
+            if ref_audio_path.exists():
+                ref_features["mfcc"] = extract_mfcc_features(ref_audio_path)
 
     # ── 1. Preprocess uploaded audio ────────────────────────
     raw_bytes = await audio.read()

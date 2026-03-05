@@ -73,13 +73,49 @@ def calculate_weighted_score(
     )
     detail["voice_quality"] = vq_detail
 
-    overall = (
+    # ── Utterance-level sanity gate ─────────────────────────
+    # The acoustic similarity metrics can give non-trivial scores even when
+    # the user records a full sentence. Gate the score based on duration vs.
+    # the reference word to strongly penalize obvious mismatches.
+    gate, gate_detail = _compute_utterance_gate(
+        user_features.get("duration", {}),
+        ref_features.get("duration", {}),
+    )
+    detail["utterance_gate"] = gate_detail
+
+    pitch_score *= gate
+    formant_score *= gate
+    intensity_score *= gate
+    duration_score *= gate
+    vq_score *= gate
+
+    # ── Word mismatch signal (for feedback / debugging) ──────
+    # Keep a mismatch *signal* in details, but don't gate score on it.
+    other_mean = float(np.mean([pitch_score, intensity_score, duration_score, vq_score]))
+    formants_missing = bool(formant_detail.get("missing", False))
+    _mismatch_gate, mismatch_detail = _compute_word_mismatch_gate(
+        formant_score,
+        other_mean,
+        formants_missing=formants_missing,
+    )
+    detail["word_mismatch_gate"] = mismatch_detail
+
+    overall_raw = (
         WEIGHTS["pitch"] * pitch_score
         + WEIGHTS["formants"] * formant_score
         + WEIGHTS["intensity"] * intensity_score
         + WEIGHTS["duration"] * duration_score
         + WEIGHTS["voice_quality"] * vq_score
     )
+
+    # Conservative MFCC penalty (only triggers for clearly different audio)
+    mfcc_penalty, mfcc_detail = _compute_mfcc_penalty(
+        user_features.get("mfcc", {}),
+        ref_features.get("mfcc", {}),
+    )
+    detail["mfcc_gate"] = mfcc_detail
+
+    overall = overall_raw * mfcc_penalty
 
     return {
         "overall_score": round(overall, 1),
@@ -94,6 +130,57 @@ def calculate_weighted_score(
     }
 
 
+def _compute_utterance_gate(user_duration: dict, ref_duration: dict) -> tuple[float, dict[str, Any]]:
+    """Compute a 0..1 multiplier based on utterance length mismatch.
+
+    The app is designed for single-word recordings. If the processed user audio
+    is far longer than the reference word, it's likely a sentence or multiple
+    words, and the overall score should drop sharply.
+
+    Returns (gate, detail).
+    """
+    u = float(user_duration.get("total_seconds", 0.0) or 0.0)
+    r = float(ref_duration.get("total_seconds", 0.0) or 0.0)
+
+    # If reference duration is missing, don't gate.
+    if r <= 0.0 or u <= 0.0:
+        return 1.0, {
+            "gate": 1.0,
+            "reason": "missing_duration",
+            "user_seconds": round(u, 3),
+            "ref_seconds": round(r, 3),
+        }
+
+    # Allow some natural variation in how long a word is spoken.
+    expected_max = max(1.8, 3.0 * r)
+    expected_min = max(0.25, 0.35 * r)
+
+    gate = 1.0
+    reason = "ok"
+
+    if u > expected_max:
+        # Penalize rapidly once the user exceeds the expected max.
+        ratio_over = (u / expected_max) - 1.0
+        gate = float(np.exp(-0.5 * (ratio_over / 0.2) ** 2))
+        reason = "too_long"
+    elif u < expected_min:
+        ratio_under = (expected_min / max(u, 1e-6)) - 1.0
+        gate = float(np.exp(-0.5 * (ratio_under / 0.35) ** 2))
+        reason = "too_short"
+
+    # Keep a small floor for numerical stability and predictable UX.
+    gate = float(np.clip(gate, 0.0, 1.0))
+
+    return gate, {
+        "gate": round(gate, 4),
+        "reason": reason,
+        "user_seconds": round(u, 3),
+        "ref_seconds": round(r, 3),
+        "expected_min_seconds": round(expected_min, 3),
+        "expected_max_seconds": round(expected_max, 3),
+    }
+
+
 # ── DTW helper ──────────────────────────────────────────────
 
 def _dtw_distance(seq_a: list[float], seq_b: list[float]) -> float:
@@ -103,7 +190,8 @@ def _dtw_distance(seq_a: list[float], seq_b: list[float]) -> float:
     """
     n, m = len(seq_a), len(seq_b)
     if n == 0 or m == 0:
-        return 0.0
+        # No alignment possible; treat as maximally different.
+        return 1e6
     a = np.array(seq_a, dtype=np.float64)
     b = np.array(seq_b, dtype=np.float64)
     dtw = np.full((n + 1, m + 1), np.inf)
@@ -155,6 +243,7 @@ def _compare_pitch(user: dict, ref: dict) -> tuple[float, dict]:
 def _compare_formants(user: dict, ref: dict) -> tuple[float, dict]:
     scores: list[float] = []
     detail: dict[str, Any] = {}
+    missing = False
 
     for fi in ("f1", "f2", "f3"):
         u_vals = user.get(f"{fi}_values", [])
@@ -165,7 +254,12 @@ def _compare_formants(user: dict, ref: dict) -> tuple[float, dict]:
         else:
             u_mean = user.get(f"{fi}_mean", 0)
             r_mean = ref.get(f"{fi}_mean", 0)
-            s = _gaussian_similarity(abs(u_mean - r_mean), sigma=100)
+            # If either mean is missing (0 from extractor), treat as insufficient.
+            if not u_mean or not r_mean:
+                s = 50.0
+                missing = True
+            else:
+                s = _gaussian_similarity(abs(u_mean - r_mean), sigma=100)
         scores.append(s)
         detail[fi] = round(s, 1)
 
@@ -174,6 +268,7 @@ def _compare_formants(user: dict, ref: dict) -> tuple[float, dict]:
         score = 0.4 * scores[0] + 0.4 * scores[1] + 0.2 * scores[2]
     else:
         score = float(np.mean(scores)) if scores else 50.0
+    detail["missing"] = missing
     return score, detail
 
 
@@ -188,8 +283,13 @@ def _compare_intensity(user: dict, ref: dict) -> tuple[float, dict]:
     else:
         contour_score = 50.0
 
-    mean_diff = abs(user.get("mean", 0) - ref.get("mean", 0))
-    mean_score = _gaussian_similarity(mean_diff, sigma=5)
+    u_mean = user.get("mean", 0)
+    r_mean = ref.get("mean", 0)
+    if not u_mean or not r_mean:
+        mean_score = 50.0
+    else:
+        mean_diff = abs(u_mean - r_mean)
+        mean_score = _gaussian_similarity(mean_diff, sigma=5)
 
     score = 0.6 * contour_score + 0.4 * mean_score
     detail.update({
@@ -240,3 +340,80 @@ def _compare_voice_quality(user: dict, ref: dict) -> tuple[float, dict]:
         "shimmer_score": round(s_score, 1),
     })
     return score, detail
+
+
+def _compute_word_mismatch_gate(
+    formant_score: float,
+    other_mean_score: float,
+    *,
+    formants_missing: bool,
+) -> tuple[float, dict[str, Any]]:
+    """Return a 0..1 multiplier based on formant match.
+
+    For single-word pronunciation, formants are the best proxy for "did you
+    say the same vowels/word". When formant_score is low, collapse the overall.
+    """
+    fs = float(formant_score)
+    other = float(other_mean_score)
+
+    if formants_missing:
+        return 1.0, {"gate": 1.0, "reason": "missing_formants", "formants": round(fs, 1), "other_mean": round(other, 1)}
+
+    # If formants aren't extremely low, don't apply a mismatch penalty.
+    if fs >= 25.0:
+        return 1.0, {"gate": 1.0, "reason": "ok", "formants": round(fs, 1), "other_mean": round(other, 1)}
+
+    gap = max(0.0, other - fs)
+    # If everything is low (common for beginners), it's likely not a "different word"
+    # case—avoid collapsing scores further.
+    if gap <= 25.0:
+        return 1.0, {"gate": 1.0, "reason": "low_overall_confidence", "formants": round(fs, 1), "other_mean": round(other, 1)}
+
+    # Strong penalty when other scores are high but formants are low.
+    # - fs_term collapses as formants approach 0
+    # - gap_term collapses as the disparity grows beyond 25
+    fs_term = (max(fs, 0.0) / 25.0) ** 2
+    gap_term = float(np.exp(-0.5 * ((gap - 25.0) / 15.0) ** 2))
+    gate = float(np.clip(fs_term * gap_term, 0.2, 1.0))
+
+    reason = "very_low_formants" if fs <= 5.0 else "low_formants"
+    return gate, {
+        "gate": round(gate, 4),
+        "reason": reason,
+        "formants": round(fs, 1),
+        "other_mean": round(other, 1),
+        "gap": round(gap, 1),
+    }
+
+
+def _compute_mfcc_penalty(user_mfcc: dict, ref_mfcc: dict) -> tuple[float, dict[str, Any]]:
+    """Return a 0..1 penalty based on MFCC distance.
+
+    This is intentionally conservative: it should NOT reduce scores for normal
+    attempts, only for clearly different recordings (wrong word / sentence / noise).
+    """
+    u = user_mfcc.get("mean", None)
+    r = ref_mfcc.get("mean", None)
+    if not u or not r:
+        return 1.0, {"gate": 1.0, "reason": "missing_mfcc"}
+
+    u_vec = np.array(u, dtype=np.float64)
+    r_vec = np.array(r, dtype=np.float64)
+    if u_vec.shape != r_vec.shape or u_vec.size == 0:
+        return 1.0, {"gate": 1.0, "reason": "bad_shape"}
+
+    dist = float(np.linalg.norm(u_vec - r_vec))
+
+    # Piecewise penalty: no penalty when close, steep drop only when very far.
+    t_ok = 70.0
+    t_bad = 160.0
+    if dist <= t_ok:
+        return 1.0, {"gate": 1.0, "reason": "ok", "dist": round(dist, 2)}
+    if dist >= t_bad:
+        return 0.2, {"gate": 0.2, "reason": "very_different", "dist": round(dist, 2)}
+
+    # Smoothly interpolate between 1.0 and 0.2
+    frac = (dist - t_ok) / (t_bad - t_ok)
+    gate = float(1.0 - frac * 0.8)
+    gate = float(np.clip(gate, 0.2, 1.0))
+    return gate, {"gate": round(gate, 4), "reason": "different", "dist": round(dist, 2)}

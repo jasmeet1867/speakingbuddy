@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import librosa
 import parselmouth
 from parselmouth.praat import call
 
@@ -27,7 +28,26 @@ def extract_all_praat_features(audio_path: str | Path) -> dict[str, Any]:
         "intensity": _extract_intensity(snd),
         "duration": _extract_duration(snd),
         "voice_quality": _extract_voice_quality(snd),
+        "mfcc": extract_mfcc_features(audio_path),
     }
+
+
+def extract_mfcc_features(audio_path: str | Path, *, n_mfcc: int = 13) -> dict[str, Any]:
+    """Extract MFCC summary features using librosa.
+
+    Returns a JSON-serialisable dict:
+        {"mean": [...], "std": [...], "n_mfcc": int}
+    """
+    try:
+        y, sr = librosa.load(str(audio_path), sr=None, mono=True)
+        if y is None or len(y) == 0:
+            return {"mean": [], "std": [], "n_mfcc": n_mfcc}
+        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
+        mean = np.mean(mfcc, axis=1)
+        std = np.std(mfcc, axis=1)
+        return {"mean": mean.astype(float).tolist(), "std": std.astype(float).tolist(), "n_mfcc": n_mfcc}
+    except Exception:
+        return {"mean": [], "std": [], "n_mfcc": n_mfcc}
 
 
 # ── Internal helpers ────────────────────────────────────────

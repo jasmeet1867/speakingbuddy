@@ -9,21 +9,32 @@ cd backend
 
 # Create virtual environment
 python -m venv .venv
-.venv\Scripts\activate      # Windows
-# source .venv/bin/activate  # macOS/Linux
+
+# Activate (pick one for your shell)
+# PowerShell:
+#   .venv\Scripts\Activate.ps1
+# Windows CMD:
+#   .venv\Scripts\activate.bat
+# Git Bash:
+#   source .venv/Scripts/activate
+# macOS/Linux:
+#   source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Import word data (once you have the CSV + audio files)
-python -m scripts.import_csv --csv data/words.csv
+# Initialize DB + precompute reference-audio features (recommended)
+python -m scripts.import_csv --csv data/words.csv --audio-dir reference_audio --clean
+python -m scripts.precompute_features
 
-#then 
+# One-command alternative:
+# python -m scripts.pipeline
 
-python 
-
-# Run the server
+# Run the server (serves both API + frontend)
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
+
+Open http://127.0.0.1:8000 in your browser.
 
 ## API Endpoints
 
