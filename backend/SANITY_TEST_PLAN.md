@@ -26,15 +26,14 @@ python -m scripts.precompute_features --audio-dir reference_audio_lod_raw
 
 Goal: verify score stays near-perfect when both sides are effectively same source.
 
-1. Set `AUDIO_DIR` and upload mode in `backend/.env`:
+1. Set `AUDIO_DIR` in `backend/.env`:
 
 ```env
 AUDIO_DIR=./reference_audio_lod_raw
-UPLOAD_PREPROCESS_MODE=full
 ```
 
 2. Restart server.
-3. In browser, press Evaluate across many words.
+3. In browser, use URL parameter `?sanity=ref` and press Evaluate across many words.
 4. Record average/min score.
 
 Expected: mostly very high scores. If not, scoring pipeline has deeper issues.
@@ -43,25 +42,14 @@ Expected: mostly very high scores. If not, scoring pipeline has deeper issues.
 
 Goal: measure effect when upload preprocessing may split to first segment.
 
-1. Keep:
-
-```env
-UPLOAD_PREPROCESS_MODE=full
-```
-
-2. Speak both segments (word + plural) when present.
+1. Speak both segments (word + plural) when present.
 3. Record scores.
 
 ## Experiment C: User Speech (Word + Plural) with Convert-Only Upload
 
 Goal: test whether upload-side preprocessing is causing mismatch.
 
-1. Change:
-
-```env
-UPLOAD_PREPROCESS_MODE=convert-only
-```
-
+1. Baseline-C already uses conversion-only upload analysis by default.
 2. Restart server.
 3. Speak both segments (word + plural) and score the same subset of words as Experiment B.
 

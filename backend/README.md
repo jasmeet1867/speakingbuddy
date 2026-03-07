@@ -54,12 +54,13 @@ Set these in `backend/.env` for this test mode:
 
 ```env
 AUDIO_DIR=./reference_audio_lod_raw
-UPLOAD_PREPROCESS_MODE=full
 ```
 
-`UPLOAD_PREPROCESS_MODE` values:
-- `full`: current behavior (normalize, trim, split-first-word, cap)
-- `convert-only`: decode/convert upload to WAV only (no extra preprocessing)
+Upload analysis now uses conversion-only behavior by default (baseline C).
+
+Frontend guardrail check (reference-vs-reference):
+- Open topic page with `?sanity=ref` in the URL
+- Example: `topic.html?category=animals&lang=en&sanity=ref`
 
 See `backend/SANITY_TEST_PLAN.md` for the full experiment matrix and result template.
 

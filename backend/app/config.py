@@ -17,7 +17,6 @@ class Settings:
         if o.strip()
     ]
     AUDIO_DIR: Path = Path(os.getenv("AUDIO_DIR", str(_backend_dir / "reference_audio")))
-    UPLOAD_PREPROCESS_MODE: str = os.getenv("UPLOAD_PREPROCESS_MODE", "full").strip().lower()
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8000"))
 

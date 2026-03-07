@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException
 import aiosqlite
+from pydub.exceptions import CouldntDecodeError
 
 from app.database import get_db
 from app.config import settings
@@ -29,7 +30,7 @@ async def check_pronunciation(
     """Accept user audio and return pronunciation score + feedback.
 
     Pipeline:
-      1. Read upload bytes & preprocess (convert, normalise, trim, split)
+            1. Read upload bytes and convert to WAV
       2. Extract Praat features from processed user audio
       3. Load pre-computed reference features from DB
       4. Compare with weighted scoring (DTW + Gaussian similarity)
@@ -86,12 +87,18 @@ async def check_pronunciation(
     if not raw_bytes:
         raise HTTPException(status_code=400, detail="Empty audio file")
 
+    # Very small blobs from interrupted MediaRecorder sessions are often invalid.
+    if len(raw_bytes) < 1024:
+        raise HTTPException(
+            status_code=400,
+            detail="Audio is too short or invalid. Please record again.",
+        )
+
     logger.warning(
-        "Pronunciation request: word_id=%d, upload_filename=%s, upload_bytes=%d, preprocess_mode=%s",
+        "Pronunciation request: word_id=%d, upload_filename=%s, upload_bytes=%d",
         word_id,
         audio.filename or "<none>",
         len(raw_bytes),
-        settings.UPLOAD_PREPROCESS_MODE,
     )
 
     user_wav_path: Path | None = None
@@ -99,7 +106,6 @@ async def check_pronunciation(
         user_wav_path = preprocess_upload(
             raw_bytes,
             audio.filename or "upload.webm",
-            mode=settings.UPLOAD_PREPROCESS_MODE,
         )
 
         # ── 2. Extract Praat features from user audio ───────
@@ -111,6 +117,12 @@ async def check_pronunciation(
         # ── 4. Generate feedback ────────────────────────────
         feedback = generate_phonetic_feedback(score_result, user_features, ref_features)
 
+    except CouldntDecodeError:
+        logger.warning("Could not decode uploaded audio for word %d", word_id)
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded audio format is invalid or corrupted. Please record again.",
+        )
     except Exception as exc:
         logger.exception("Pronunciation analysis failed for word %d", word_id)
         raise HTTPException(

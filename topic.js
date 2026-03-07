@@ -24,9 +24,9 @@ const TARGET_LANG = (() => {
 })();
 const CURRENT_MODE = qp("mode") || localStorage.getItem(STORAGE_DIFFICULTY) || "text";
 
-// Sanity-test switch: when true, Evaluate uploads reference audio for the
-// current word instead of the microphone recording.
-const SANITY_USE_REFERENCE_AUDIO = false;
+// Guardrail mode: set `?sanity=ref` in URL to evaluate reference-vs-reference.
+// This keeps default user behavior unchanged while making sanity checks easy.
+const SANITY_USE_REFERENCE_AUDIO = qp("sanity") === "ref";
 
 // Emoji map (same as landing page)
 const CATEGORY_EMOJI = {
@@ -40,6 +40,7 @@ const pageTitle      = document.getElementById("pageTitle");
 const categoryEmoji  = document.getElementById("categoryEmoji");
 const counter        = document.getElementById("counter");
 const progressBar    = document.getElementById("progressBar");
+const sanityBadge    = document.getElementById("sanityBadge");
 
 const promptWord     = document.getElementById("promptWord");
 const meaningText    = document.getElementById("meaningText");
@@ -387,6 +388,12 @@ async function init() {
   pageTitle.textContent = CATEGORY.charAt(0).toUpperCase() + CATEGORY.slice(1);
   categoryEmoji.textContent = CATEGORY_EMOJI[CATEGORY] || "📚";
   document.title = `${pageTitle.textContent} • SpeakingBuddy`;
+  if (SANITY_USE_REFERENCE_AUDIO) {
+    if (sanityBadge) sanityBadge.style.display = "inline-flex";
+    document.title = `${pageTitle.textContent} • SpeakingBuddy • SANITY`;
+  } else {
+    if (sanityBadge) sanityBadge.style.display = "none";
+  }
 
   try {
     WORDS = await fetchWords(CATEGORY, TARGET_LANG);

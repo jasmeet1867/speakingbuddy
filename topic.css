@@ -102,6 +102,26 @@ button, a, [role="button"]{
   color: var(--muted);
 }
 
+.right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.sanity-badge{
+  display:inline-flex;
+  align-items:center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  color: #0f766e;
+  background: rgba(16,185,129,.15);
+  border: 1px solid rgba(15,118,110,.28);
+  white-space: nowrap;
+}
+
 /* Layout */
 .wrap{
   max-width: 1100px;
