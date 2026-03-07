@@ -88,7 +88,12 @@ def split_first_word(audio: AudioSegment,
     return audio[start:end]
 
 
-def preprocess_upload(raw_bytes: bytes, original_filename: str = "upload.webm") -> Path:
+def preprocess_upload(
+    raw_bytes: bytes,
+    original_filename: str = "upload.webm",
+    *,
+    mode: str = "full",
+) -> Path:
     """End-to-end preprocessing of a user upload.
 
     1. Write raw bytes to a temp file
@@ -113,6 +118,15 @@ def preprocess_upload(raw_bytes: bytes, original_filename: str = "upload.webm") 
 
     # Load as AudioSegment for processing
     audio = AudioSegment.from_wav(str(wav_path))
+
+    # "convert-only" keeps the raw timing/structure and skips all processing
+    # except decoding and WAV conversion.
+    if mode == "convert-only":
+        return wav_path
+
+    if mode != "full":
+        raise ValueError(f"Unsupported preprocess mode: {mode}")
+
     audio = normalize_audio(audio)
     audio = trim_silence(audio)
 

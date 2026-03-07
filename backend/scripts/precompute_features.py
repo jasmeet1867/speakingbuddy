@@ -9,6 +9,7 @@ import json
 import sqlite3
 import sys
 import time
+import argparse
 from pathlib import Path
 
 # Allow imports from the backend package
@@ -17,12 +18,12 @@ sys.path.insert(0, str(BACKEND_DIR))
 
 from app.services.praat_analyzer import extract_all_praat_features
 
-DB_PATH = BACKEND_DIR / "data" / "speakingbuddy.db"
-AUDIO_DIR = BACKEND_DIR / "reference_audio"
+DEFAULT_DB_PATH = BACKEND_DIR / "data" / "speakingbuddy.db"
+DEFAULT_AUDIO_DIR = BACKEND_DIR / "reference_audio"
 
 
-def precompute():
-    conn = sqlite3.connect(DB_PATH)
+def precompute(db_path: Path, audio_dir: Path):
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
 
     rows = conn.execute(
@@ -35,7 +36,7 @@ def precompute():
     t0 = time.time()
 
     for row in rows:
-        audio_path = AUDIO_DIR / row["audio_filename"]
+        audio_path = audio_dir / row["audio_filename"]
         if not audio_path.is_file():
             print(f"  SKIP  id={row['id']} {row['word_lb']!r} — file not found: {audio_path.name}")
             skipped += 1
@@ -66,4 +67,9 @@ def precompute():
 
 
 if __name__ == "__main__":
-    precompute()
+    parser = argparse.ArgumentParser(description="Pre-compute Praat features for reference audio")
+    parser.add_argument("--db", type=Path, default=DEFAULT_DB_PATH, help="SQLite DB path")
+    parser.add_argument("--audio-dir", type=Path, default=DEFAULT_AUDIO_DIR, help="Reference audio directory")
+    args = parser.parse_args()
+
+    precompute(args.db, args.audio_dir)

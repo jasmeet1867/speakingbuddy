@@ -23,12 +23,12 @@ function getAudioUrl(wordId) {
   return `${API_BASE_URL}/api/audio/${wordId}`;
 }
 
-async function checkPronunciation(wordId, audioBlob) {
+async function checkPronunciation(wordId, audioBlob, filename = "recording.webm") {
   const form = new FormData();
   form.append("word_id", String(wordId));
-  form.append("audio", audioBlob, "recording.webm");
+  form.append("audio", audioBlob, filename);
 
-  console.log("[API] POST /api/pronunciation/check  word_id:", wordId, "blob size:", audioBlob.size);
+  console.log("[API] POST /api/pronunciation/check  word_id:", wordId, "blob size:", audioBlob.size, "filename:", filename);
 
   const res = await fetch(`${API_BASE_URL}/api/pronunciation/check`, {
     method: "POST",

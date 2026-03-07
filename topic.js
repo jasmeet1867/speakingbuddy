@@ -24,6 +24,10 @@ const TARGET_LANG = (() => {
 })();
 const CURRENT_MODE = qp("mode") || localStorage.getItem(STORAGE_DIFFICULTY) || "text";
 
+// Sanity-test switch: when true, Evaluate uploads reference audio for the
+// current word instead of the microphone recording.
+const SANITY_USE_REFERENCE_AUDIO = false;
+
 // Emoji map (same as landing page)
 const CATEGORY_EMOJI = {
   greetings: "👋", animals: "🐾", house: "🏠", outdoor: "🌳",
@@ -117,10 +121,14 @@ function updateUI() {
   cleanupRecording();
   playBtn.disabled = true;
   retryBtn.disabled = true;
-  evaluateRow.style.display = "none";
+  evaluateRow.style.display = SANITY_USE_REFERENCE_AUDIO ? "flex" : "none";
   breakdownEl.style.display = "none";
 
-  setFeedback("Record your voice and tap Evaluate to get a pronunciation score.");
+  if (SANITY_USE_REFERENCE_AUDIO) {
+    setFeedback("Sanity mode ON: Evaluate will send the reference audio (not your recording).");
+  } else {
+    setFeedback("Record your voice and tap Evaluate to get a pronunciation score.");
+  }
 }
 
 // ── Back button ───────────────────────────────────────────
@@ -256,9 +264,13 @@ retryBtn.addEventListener("click", () => {
   cleanupRecording();
   playBtn.disabled = true;
   retryBtn.disabled = true;
-  evaluateRow.style.display = "none";
+  evaluateRow.style.display = SANITY_USE_REFERENCE_AUDIO ? "flex" : "none";
   breakdownEl.style.display = "none";
-  setFeedback("Try again — tap the mic to record.");
+  if (SANITY_USE_REFERENCE_AUDIO) {
+    setFeedback("Sanity mode ON: Evaluate will send the reference audio (not your recording).");
+  } else {
+    setFeedback("Try again — tap the mic to record.");
+  }
   micHint.textContent = "Tap the microphone to record";
 });
 
@@ -274,8 +286,12 @@ evaluateBtn.addEventListener("click", async (e) => {
 
   console.log("[Evaluate] clicked, recordedBlob:", recordedBlob, "WORDS.length:", WORDS.length);
 
-  if (!recordedBlob || !WORDS.length) {
-    console.warn("[Evaluate] No recording or words — aborting.");
+  if (!WORDS.length) {
+    console.warn("[Evaluate] No words loaded — aborting.");
+    return;
+  }
+  if (!SANITY_USE_REFERENCE_AUDIO && !recordedBlob) {
+    console.warn("[Evaluate] No recording — aborting.");
     return;
   }
   const word = WORDS[i];
@@ -285,7 +301,25 @@ evaluateBtn.addEventListener("click", async (e) => {
   evaluateBtn.textContent = "⏳ Analyzing…";
 
   try {
-    const result = await checkPronunciation(word.id, recordedBlob);
+    let blobToAnalyze = recordedBlob;
+    let filename = "recording.webm";
+    let sourceLabel = "recorded";
+
+    if (SANITY_USE_REFERENCE_AUDIO) {
+      const refUrl = getAudioUrl(word.id);
+      const refRes = await fetch(refUrl);
+      if (!refRes.ok) {
+        throw new Error(`Failed to fetch reference audio: ${refRes.status}`);
+      }
+      blobToAnalyze = await refRes.blob();
+      filename = "reference.wav";
+      sourceLabel = "reference";
+      setFeedback("Running sanity check: evaluating reference audio against itself…");
+    }
+
+    console.log("[Evaluate] Audio source:", sourceLabel, "filename:", filename, "size:", blobToAnalyze?.size);
+
+    const result = await checkPronunciation(word.id, blobToAnalyze, filename);
     console.log("[Evaluate] Result:", result);
     renderScore(result);
   } catch (err) {

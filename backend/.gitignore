@@ -23,6 +23,7 @@ reference_audio/*.m4a
 reference_audio/*.ogg
 reference_audio/*.mp3
 reference_audio_raw/
+reference_audio_lod_raw/
 
 # IDE
 .vscode/

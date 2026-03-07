@@ -86,9 +86,21 @@ async def check_pronunciation(
     if not raw_bytes:
         raise HTTPException(status_code=400, detail="Empty audio file")
 
+    logger.warning(
+        "Pronunciation request: word_id=%d, upload_filename=%s, upload_bytes=%d, preprocess_mode=%s",
+        word_id,
+        audio.filename or "<none>",
+        len(raw_bytes),
+        settings.UPLOAD_PREPROCESS_MODE,
+    )
+
     user_wav_path: Path | None = None
     try:
-        user_wav_path = preprocess_upload(raw_bytes, audio.filename or "upload.webm")
+        user_wav_path = preprocess_upload(
+            raw_bytes,
+            audio.filename or "upload.webm",
+            mode=settings.UPLOAD_PREPROCESS_MODE,
+        )
 
         # ── 2. Extract Praat features from user audio ───────
         user_features = extract_all_praat_features(user_wav_path)
