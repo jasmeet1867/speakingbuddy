@@ -54,7 +54,16 @@ def extract_mfcc_features(audio_path: str | Path, *, n_mfcc: int = 13) -> dict[s
 
 def _extract_pitch(snd: parselmouth.Sound) -> dict:
     """Extract pitch (F0) statistics."""
-    pitch_obj = call(snd, "To Pitch", 0.0, 75, 600)
+    try:
+        pitch_obj = call(snd, "To Pitch", 0.0, 75, 600)
+    except parselmouth.PraatError:
+        return {
+            "mean": 0.0,
+            "std": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "values": [],
+        }
     pitch_values = pitch_obj.selected_array["frequency"]
     voiced = pitch_values[pitch_values > 0]
 

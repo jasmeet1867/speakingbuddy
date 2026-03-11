@@ -24,6 +24,11 @@ AGGRESSIVE_SILENCE_THRESH_DB = -35
 AGGRESSIVE_MIN_SILENCE_LEN_MS = 80
 MAX_ANALYSIS_LEN_MS = 3000
 
+# If preprocessing trims a recording down to something extremely short,
+# Praat feature extraction (especially pitch) can fail. Treat that as an
+# invalid user attempt instead of crashing the API.
+MIN_UPLOAD_LEN_MS = 120
+
 
 def convert_to_wav(input_path: str | Path, output_path: str | Path | None = None) -> Path:
     """Convert any audio format to WAV (mono, SAMPLE_RATE).
@@ -132,6 +137,11 @@ def preprocess_upload(raw_bytes: bytes, original_filename: str = "upload.webm") 
     # runtime and from being mistaken as a single word.
     if len(audio) > MAX_ANALYSIS_LEN_MS:
         audio = audio[:MAX_ANALYSIS_LEN_MS]
+
+    if len(audio) < MIN_UPLOAD_LEN_MS:
+        raise ValueError(
+            "Recording too short. Please record a clear single word (at least ~0.2s) and try again."
+        )
 
     # Overwrite the wav_path with the processed version
     audio.export(str(wav_path), format="wav")

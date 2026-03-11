@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException
 import aiosqlite
+import parselmouth
 
 from app.database import get_db
 from app.config import settings
@@ -99,12 +100,13 @@ async def check_pronunciation(
         # ── 4. Generate feedback ────────────────────────────
         feedback = generate_phonetic_feedback(score_result, user_features, ref_features)
 
+    except (ValueError, parselmouth.PraatError) as exc:
+        # Common user-facing failures (too-short recording, pitch analysis constraints, etc.)
+        logger.warning("Pronunciation analysis rejected for word %d: %s", word_id, exc)
+        raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
         logger.exception("Pronunciation analysis failed for word %d", word_id)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Analysis error: {exc}",
-        )
+        raise HTTPException(status_code=500, detail=f"Analysis error: {exc}")
     finally:
         # ── 5. Cleanup temp file ────────────────────────────
         if user_wav_path and user_wav_path.exists():
